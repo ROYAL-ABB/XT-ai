@@ -74,7 +74,6 @@
             transition: filter 0.2s ease;
         }
 
-        /* Video Effects */
         .filter-normal { filter: none; }
         .filter-mono { filter: grayscale(1); }
         .filter-invert { filter: invert(1); }
@@ -107,9 +106,7 @@
 
         .btn-primary { background: var(--accent); color: white; }
         .btn-primary:hover { background: var(--accent-hover); }
-        
         .btn-success { background: var(--success); color: white; }
-        
         .btn-secondary { background: #475569; color: white; }
 
         .diagnostic-list {
@@ -177,10 +174,8 @@
         <p>Advanced real-time diagnostics for built-in and external cabled video devices.</p>
     </header>
 
-    <!-- Error Messenger -->
     <div id="errorLog" class="error-log"></div>
 
-    <!-- Live Video Panel -->
     <div class="card">
         <div class="feed-container">
             <video id="preview" autoplay playsinline muted></video>
@@ -203,7 +198,6 @@
         </div>
     </div>
 
-    <!-- Analytics Panel -->
     <div class="card">
         <h2 style="margin: 0 0 20px 0; font-size: 1.4rem;">Hardware Analytics</h2>
         <div class="diagnostic-list">
@@ -230,7 +224,6 @@
         </div>
     </div>
 
-    <!-- Captured Frames Grid -->
     <div class="card gallery-section">
         <h3 style="margin: 0;">Captured Test Frames</h3>
         <div id="snapshotGallery" class="gallery-grid"></div>
@@ -252,18 +245,10 @@
 
     let activeStream = null;
 
-    // Action 1: Handle Initial Activation / Permissions Setup
     startBtn.addEventListener('click', async () => {
-        showError(""); // Clear old errors
-        
-        // Safety Check for HTTPS
-        if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-            showError("SECURITY BLOCK: Web browsers completely disable camera hardware over unencrypted connections. You MUST publish this site using HTTPS to let external cameras connect.");
-            return;
-        }
-
+        showError("");
         try {
-            // Force browser access prompt
+            // Initial simple permission pull to avoid configuration crash issues
             await navigator.mediaDevices.getUserMedia({ video: true });
             await indexDevices();
             startBtn.textContent = "Rescan Devices";
@@ -272,7 +257,6 @@
         }
     });
 
-    // Action 2: Find all connected hardware channels
     async function indexDevices() {
         const structuralDevices = await navigator.mediaDevices.enumerateDevices();
         const videoChannels = structuralDevices.filter(d => d.kind === 'videoinput');
@@ -280,63 +264,72 @@
         deviceSelector.innerHTML = '';
         
         if(videoChannels.length === 0) {
-            deviceSelector.innerHTML = '<option>No external or internal cameras found</option>';
+            deviceSelector.innerHTML = '<option>No video channels discovered</option>';
             return;
         }
 
         videoChannels.forEach((device, index) => {
             const opt = document.createElement('option');
             opt.value = device.deviceId;
-            opt.text = device.label || `Cabled Device Channel ${index + 1}`;
+            opt.text = device.label || `Video Input ${index + 1}`;
             deviceSelector.appendChild(opt);
         });
 
-        // Auto launch first picked item 
         connectToCamera(videoChannels[0].deviceId);
     }
 
-    // Action 3: Stream specific chosen hardware feed
+    // The Fix: Tiered configuration logic fallback matrix
     async function connectToCamera(id) {
         if (activeStream) {
             activeStream.getTracks().forEach(t => t.stop());
         }
 
-        const configuration = {
-            video: {
-                deviceId: { exact: id },
-                width: { ideal: 3840 },
-                height: { ideal: 2160 }
-            }
-        };
+        // Try options progressively from flexible native to strict safe zones
+        const optimizationTiers = [
+            { video: { deviceId: { exact: id } } }, // Tier 1: Pull camera native defaults (Safest for cabled devices)
+            { video: { deviceId: { exact: id }, width: { ideal: 1920 }, height: { ideal: 1080 } } }, // Tier 2: Standard HD fallback
+            { video: { deviceId: { exact: id }, width: { ideal: 1280 }, height: { ideal: 720 } } }  // Tier 3: Basic SD fallback
+        ];
 
-        try {
-            activeStream = await navigator.mediaDevices.getUserMedia(configuration);
-            video.srcObject = activeStream;
-            
-            statusBadge.textContent = "Online";
-            statusBadge.className = "badge badge-on";
-            
-            video.onloadedmetadata = () => {
-                const track = activeStream.getVideoTracks()[0];
-                const dataSettings = track.getSettings();
-                
-                const w = dataSettings.width || video.videoWidth;
-                const h = dataSettings.height || video.videoHeight;
-                
-                resVal.textContent = `${w} x ${h}`;
-                
-                const calculateGcd = (x, y) => y ? calculateGcd(y, x % y) : x;
-                const shareDiv = calculateGcd(w, h);
-                aspectVal.textContent = `${w/shareDiv}:${h/shareDiv}`;
-                
-                fpsVal.textContent = dataSettings.frameRate ? `${Math.round(dataSettings.frameRate)} FPS` : "Dynamic";
-            };
-        } catch(err) {
-            handleHardwareError(err);
+        let streamAcquired = false;
+
+        for (let config of optimizationTiers) {
+            try {
+                activeStream = await navigator.mediaDevices.getUserMedia(config);
+                video.srcObject = activeStream;
+                streamAcquired = true;
+                showError(""); // Clear any previous tier attempts failures
+                break;
+            } catch (tierError) {
+                console.warn("Configuration tier failed, jumping to next setup option...", tierError);
+            }
         }
+
+        if (!streamAcquired) {
+            handleHardwareError(new Error("The external device rejected all standard browser handshake streams. Please reconnect your cable connection."));
+            return;
+        }
+
+        statusBadge.textContent = "Online";
+        statusBadge.className = "badge badge-on";
+        
+        video.onloadedmetadata = () => {
+            const track = activeStream.getVideoTracks()[0];
+            const dataSettings = track.getSettings();
+            
+            const w = dataSettings.width || video.videoWidth;
+            const h = dataSettings.height || video.videoHeight;
+            
+            resVal.textContent = `${w} x ${h}`;
+            
+            const calculateGcd = (x, y) => y ? calculateGcd(y, x % y) : x;
+            const shareDiv = calculateGcd(w, h);
+            aspectVal.textContent = `${w/shareDiv}:${h/shareDiv}`;
+            
+            fpsVal.textContent = dataSettings.frameRate ? `${Math.round(dataSettings.frameRate)} FPS` : "Dynamic";
+        };
     }
 
-    // UI Utilities
     function setFilter(className) {
         video.className = className;
     }
@@ -356,15 +349,12 @@
         statusBadge.className = "badge badge-off";
         
         if (err.name === 'NotAllowedError') {
-            showError("Access Blocked: Please click the camera icon in your URL address bar and change permissions to 'Allow'.");
-        } else if (err.name === 'OverconstrainedError') {
-            showError("Hardware Error: The camera doesn't support the requested high resolution settings.");
+            showError("Access Blocked: Change site permissions to 'Allow' in your browser search bar.");
         } else {
-            showError(`System Issue: ${err.message || 'Could not map hardware stream to layout.'}`);
+            showError(`Hardware Issue: ${err.message || 'Could not securely bind the cable connection stream.'}`);
         }
     }
 
-    // Capture Frame Feature
     captureBtn.addEventListener('click', () => {
         if (!activeStream) return;
         const canvas = document.createElement('canvas');
@@ -372,7 +362,6 @@
         canvas.height = video.videoHeight;
         const ctx = canvas.getContext('2d');
         
-        // Maintain active CSS filters in the captured snapshot image file
         ctx.filter = getComputedStyle(video).filter;
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         
