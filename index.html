@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SYS.MATRIX // Real-Time AI Capture</title>
+    <title>APEX.MATRIX // Ultimate Target Suite</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <style>
         :root {
-            --bg: #050811;
-            --panel: #0d121f;
-            --accent: #2563eb;
-            --success: #00ffaa;
-            --error: #ff3b3b;
-            --text: #f1f5f9;
+            --bg: #03060f;
+            --panel: #0a0f1d;
+            --accent: #3b82f6;
+            --success: #00ff66;
+            --alert: #ffaa00;
+            --text: #e2e8f0;
             --border: #1e293b;
         }
 
         body {
-            font-family: 'Courier New', Courier, monospace, system-ui, sans-serif;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
@@ -31,7 +31,7 @@
 
         .app-container {
             width: 100%;
-            max-width: 1400px;
+            max-width: 1600px;
             display: grid;
             grid-template-columns: 1fr;
             gap: 20px;
@@ -40,33 +40,33 @@
 
         @media (min-width: 992px) {
             .app-container { 
-                grid-template-columns: 2.8fr 1.2fr;
+                grid-template-columns: 3fr 1fr;
                 grid-template-rows: auto 1fr;
             }
         }
 
         header {
             grid-column: 1 / -1;
-            padding-bottom: 10px;
-            border-bottom: 2px dashed #1e293b;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #1e293b;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        h1 { margin: 0 0 5px 0; font-size: 1.5rem; letter-spacing: 1px; color: var(--success); }
-        header p { margin: 0; color: #64748b; font-size: 0.85rem; }
+        h1 { margin: 0; font-size: 1.3rem; font-weight: 800; letter-spacing: 2px; color: var(--success); }
+        header p { margin: 4px 0 0 0; color: #64748b; font-size: 0.8rem; }
 
         .panel {
             background: var(--panel);
-            border-radius: 4px;
+            border-radius: 6px;
             padding: 20px;
             border: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.9);
         }
 
         .workspace-left {
-            display: flex;
-            flex-direction: column;
             gap: 15px;
         }
 
@@ -74,10 +74,10 @@
             width: 100%;
             position: relative;
             aspect-ratio: 16 / 9;
-            background: #010205;
-            border-radius: 4px;
+            background: #000;
+            border-radius: 6px;
             overflow: hidden;
-            border: 2px solid #27354f;
+            border: 1px solid #24334d;
         }
 
         video {
@@ -98,68 +98,70 @@
 
         .system-status-badge {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(0, 255, 170, 0.1);
-            padding: 6px 14px;
-            border-radius: 3px;
-            border: 1px solid var(--success);
+            top: 15px;
+            left: 15px;
+            background: rgba(3, 6, 15, 0.85);
+            padding: 8px 14px;
+            border-radius: 4px;
+            border: 1px solid var(--accent);
             display: flex;
             align-items: center;
             gap: 10px;
             z-index: 20;
             font-size: 0.75rem;
-            font-weight: 900;
-            color: #fff;
-            backdrop-filter: blur(8px);
+            font-family: monospace;
+            font-weight: bold;
+            backdrop-filter: blur(10px);
         }
 
         .pulse-dot {
             width: 8px;
             height: 8px;
-            background: var(--success);
+            background: var(--accent);
             border-radius: 50%;
-            box-shadow: 0 0 8px var(--success);
-            animation: pulse 1.5s infinite;
+            box-shadow: 0 0 8px var(--accent);
         }
-
-        @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+        .pulse-dot.active {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+            animation: flash 0.3s infinite alternate;
+        }
+        @keyframes flash { from { opacity: 0.4; } to { opacity: 1; } }
 
         .controls-row {
             display: flex;
-            flex-wrap: wrap;
             gap: 15px;
             align-items: center;
-            background: #060912;
-            padding: 15px;
-            border-radius: 4px;
+            background: #070c17;
+            padding: 12px;
+            border-radius: 6px;
             border: 1px solid #1e293b;
         }
 
         select, button {
-            padding: 10px 16px;
-            border-radius: 3px;
+            padding: 10px 18px;
+            border-radius: 4px;
             font-size: 0.85rem;
-            font-weight: bold;
+            font-weight: 600;
             font-family: inherit;
-            border: 1px solid #27354f;
+            border: 1px solid #24334d;
             cursor: pointer;
+            transition: all 0.2s ease;
         }
 
-        select { background: #111827; color: var(--text); flex: 1; min-width: 150px; }
-        .btn-blue { background: #1e40af; color: white; border-color: #3b82f6; }
+        select { background: #0f172a; color: var(--text); flex: 1; }
+        button { background: var(--accent); color: white; border: none; }
+        button:hover { filter: brightness(1.1); }
 
         .sidebar-right {
-            max-height: 75vh;
-            overflow: hidden;
+            max-height: 80vh;
         }
 
         .sidebar-title {
             margin: 0 0 15px 0;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
+            font-weight: 700;
             letter-spacing: 1px;
-            border-bottom: 2px dashed var(--border);
-            padding-bottom: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -167,11 +169,13 @@
         }
 
         .counter-badge {
-            background: #111827;
+            background: #0f172a;
             color: var(--success);
             font-size: 0.75rem;
             padding: 4px 10px;
-            border: 1px solid #27354f;
+            border-radius: 4px;
+            border: 1px solid #24334d;
+            font-family: monospace;
         }
 
         .capture-list {
@@ -180,36 +184,31 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
+            padding-right: 4px;
         }
 
         .capture-card {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            background: #060912;
+            gap: 10px;
+            background: #070c17;
             padding: 12px;
-            border-radius: 4px;
+            border-radius: 6px;
             border: 1px solid #1e293b;
         }
 
         .capture-card img {
             width: 100%;
             height: auto;
-            border-radius: 2px;
-            border: 1px solid #27354f;
-            background: #000;
-        }
-
-        .capture-details {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
+            border-radius: 4px;
+            border: 1px solid #24334d;
         }
 
         .meta-line-main {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-family: monospace;
         }
 
         .capture-name { font-size: 0.8rem; font-weight: bold; color: var(--success); }
@@ -217,61 +216,64 @@
         
         .intelligence-box {
             font-size: 0.75rem;
-            background: #111827;
-            padding: 8px;
-            border-radius: 2px;
-            border-left: 3px solid var(--accent);
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 4px;
             color: #cbd5e1;
-            line-height: 1.4;
+            line-height: 1.5;
+            border-left: 3px solid var(--success);
         }
 
         .intelligence-box span {
-            color: var(--success);
-            font-weight: bold;
+            color: #fff;
+            font-weight: 600;
         }
 
         .download-btn {
-            background: #111827;
-            color: var(--success);
-            border: 1px solid #00ffaa33;
-            padding: 5px 10px;
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 6px;
+            border-radius: 4px;
             font-size: 0.75rem;
             text-decoration: none;
             text-align: center;
             font-weight: bold;
-            margin-top: 4px;
+            transition: all 0.2s;
         }
-        .download-btn:hover { background: #00ffaa11; border-color: var(--success); }
+        .download-btn:hover { background: var(--accent); color: white; }
     </style>
 </head>
 <body>
 
 <div class="app-container">
     <header>
-        <h1>SYS.MATRIX // INTRUSION SNAPSHOT TRIGGER</h1>
-        <p>Instantaneous capture on motion start. Object classification and color extraction occur on the fly.</p>
+        <div>
+            <h1>APEX // HIGH-ACCURACY MOTION INTELLIGENCE</h1>
+            <p>Optical flow tracking engine with deep classification matrixing.</p>
+        </div>
     </header>
 
     <div class="panel workspace-left">
         <div class="viewer-box">
             <div class="system-status-badge">
-                <div class="pulse-dot"></div>
-                <span id="statusMessage">NEURAL BASE INIT...</span>
+                <div class="pulse-dot" id="statusDot"></div>
+                <span id="statusMessage">CORE ENGINE OFFLINE</span>
             </div>
             
             <video id="viewscreen" autoplay playsinline muted></video>
             <canvas id="motionOverlay"></canvas>
         </div>
         <div class="controls-row">
-            <button class="btn-blue" id="initBtn">BOOT OPTICS</button>
-            <select id="selector"><option value="">WAITING...</option></select>
+            <button id="initBtn">INITIALIZE OPTICS</button>
+            <select id="selector"><option value="">AWAITING INTERFACE...</option></select>
         </div>
     </div>
 
     <div class="panel sidebar-right">
         <h3 class="sidebar-title">
-            CAPTURED ARCHIVE
-            <span class="counter-badge" id="logCount">0 IMAGES</span>
+            INTEL ARCHIVE
+            <span class="counter-badge" id="logCount">0 CAPTURES</span>
         </h3>
         <div class="capture-list" id="captureContainer"></div>
     </div>
@@ -287,6 +289,7 @@
     const captureContainer = document.getElementById('captureContainer');
     const logCount = document.getElementById('logCount');
     const statusMessage = document.getElementById('statusMessage');
+    const statusDot = document.getElementById('statusDot');
 
     let localStream = null;
     let animationFrameId = null;
@@ -294,249 +297,235 @@
     let activeLogCount = 0;
     let netModel = null;
     
-    // Smooth Brackets Setup
+    // Advanced tracking coordinates
     let currentX = 0, currentY = 0, currentW = 0, currentH = 0;
     let targetX = 0, targetY = 0, targetW = 0, targetH = 0;
-    const interpolationFactor = 0.18;
+    const lerpSpeed = 0.25; // Snappier response speed
 
-    let motionDetectedActive = false;
-    let frameMotionResetTimeout = null;
-    let currentObjectClassification = "SCANNING OBJECT...";
-    let currentObjectChroma = "Analyzing palette...";
+    let isMoving = false;
+    let fallbackClassification = "Analyzing environment...";
     
-    // Safety lock variables to prevent rapid multi-firing while an object passes through
-    let isCaptureLocked = false;
-    const lockDurationMs = 1500; 
+    // Smarter Anti-Spam: Dynamic Throttle
+    let lastCaptureTime = 0;
+    const minCaptureInterval = 400; // Allows up to 2.5 precise shots a second if movement shifts drastically
 
-    function extractChromaProfile(r, g, b) {
-        if (r > 200 && g > 200 && b > 200) return "White/Bright Attire";
-        if (r < 65 && g < 65 && b < 65) return "Black/Dark Attire";
-        let max = Math.max(r, g, b);
-        if (max === r) return (r - g > 35) ? "Red/Warm Palette" : "Orange/Brown Shade";
-        if (max === g) return "Green Palette";
-        if (max === b) return "Blue/Denim Tone";
-        return "Mixed Palette";
+    async function spinUpAI() {
+        statusMessage.textContent = "LOADING NEURAL MATRIX...";
+        try {
+            netModel = await cocoSsd.load();
+            statusMessage.textContent = "READY SYSTEM FOR INGESTION";
+            statusDot.style.backgroundColor = "var(--alert)";
+        } catch (e) {
+            statusMessage.textContent = "AI MATRIX OFFLINE";
+        }
     }
-
-    async function loadNeuralArchitecture() {
-        statusMessage.textContent = "COMPILING TF-MODELS...";
-        netModel = await cocoSsd.load();
-        statusMessage.textContent = "AI LOGIC ONLINE. BOOT OPTICS.";
-    }
-    loadNeuralArchitecture();
+    spinUpAI();
 
     initBtn.addEventListener('click', async () => {
         try {
             const check = await navigator.mediaDevices.getUserMedia({ video: true });
             check.getTracks().forEach(t => t.stop()); 
-            await findVideoChannels();
+            await discoverInputs();
         } catch (e) {
-            statusMessage.textContent = "PERIPHERAL ERROR";
+            statusMessage.textContent = "ACCESS DENIED";
         }
     });
 
-    async function findVideoChannels() {
+    async function discoverInputs() {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(d => d.kind === 'videoinput');
         selector.innerHTML = '';
         if (videoDevices.length === 0) return;
 
         videoDevices.forEach((cam, index) => {
-            const node = document.createElement('option');
-            node.value = cam.deviceId;
-            node.text = cam.label || `HARDWARE M-${index + 1}`;
-            selector.appendChild(node);
+            const opt = document.createElement('option');
+            opt.value = cam.deviceId;
+            opt.text = cam.label || `OPTICAL MATRIX CH-${index + 1}`;
+            selector.appendChild(opt);
         });
-        executeRescueStream(videoDevices[0].deviceId);
+        bindCameraStream(videoDevices[0].deviceId);
     }
 
-    async function executeRescueStream(hardwareId) {
+    async function bindCameraStream(id) {
         if (localStream) { localStream.getTracks().forEach(t => t.stop()); }
-        localStream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: hardwareId } } });
+        localStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { deviceId: { exact: id }, width: { ideal: 1280 }, height: { ideal: 720 } } 
+        });
         video.srcObject = localStream;
         video.onloadedmetadata = () => {
             overlay.width = video.videoWidth;
             overlay.height = video.videoHeight;
-            statusMessage.textContent = "ACTIVE MONITORING LINK ONLINE";
-            startVisionPipeline();
+            statusMessage.textContent = "MONITOR ACTIVE - FLOW ANALYSIS ENGAGED";
+            statusDot.className = "pulse-dot active";
+            executeHighPrecisionPipeline();
         };
     }
 
-    function startVisionPipeline() {
+    // High Precision Matrix Pipeline
+    function executeHighPrecisionPipeline() {
         if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
-        const processWidth = 160;
-        const processHeight = 120;
-        const processCanvas = document.createElement('canvas');
-        processCanvas.width = processWidth;
-        processCanvas.height = processHeight;
-        const processCtx = processCanvas.getContext('2d');
+        // Low latency downsampler for motion vector calculation
+        const lowResW = 240; 
+        const lowResH = 135;
+        const lowResCanvas = document.createElement('canvas');
+        lowResCanvas.width = lowResW;
+        lowResCanvas.height = lowResH;
+        const lowResCtx = lowResCanvas.getContext('2d');
 
-        // Continuous fast-polling classification loop
+        // Parallel classification network thread (does not drag video framerate)
+        let primaryLabel = "TRACKING TARGET";
+        let secondaryConfidence = "";
+        
         setInterval(async () => {
-            if (!video.paused && video.readyState >= 2 && netModel) {
-                const predictions = await netModel.detect(video);
-                if (predictions.length > 0) {
-                    currentObjectClassification = predictions[0].class.toUpperCase();
-                } else if (!motionDetectedActive) {
-                    currentObjectClassification = "READY / TRACKING";
+            if (!video.paused && video.readyState >= 2 && netModel && isMoving) {
+                const results = await netModel.detect(video);
+                if (results.length > 0) {
+                    primaryLabel = results[0].class.toUpperCase();
+                    secondaryConfidence = `${Math.round(results[0].score * 100)}% Match Precision`;
                 }
             }
-        }, 250);
+        }, 180);
 
-        function processFrameLoop() {
+        function track() {
             if (video.paused || video.ended) {
-                animationFrameId = requestAnimationFrame(processFrameLoop);
+                animationFrameId = requestAnimationFrame(track);
                 return;
             }
 
-            processCtx.drawImage(video, 0, 0, processWidth, processHeight);
-            const currentFrameData = processCtx.getImageData(0, 0, processWidth, processHeight);
+            lowResCtx.drawImage(video, 0, 0, lowResW, lowResH);
+            const currentFrame = lowResCtx.getImageData(0, 0, lowResW, lowResH);
             context.clearRect(0, 0, overlay.width, overlay.height);
 
-            let hasMotion = false;
-            let minX = processWidth, maxX = 0;
-            let minY = processHeight, maxY = 0;
-            let changedCount = 0;
-            let sumR = 0, sumG = 0, sumB = 0;
+            let flowDetected = false;
+            let rawMinX = lowResW, rawMaxX = 0;
+            let rawMinY = lowResH, rawMaxY = 0;
+            let motionDensity = 0;
 
             if (prevFrameData) {
-                for (let y = 0; y < processHeight; y++) {
-                    for (let x = 0; x < processWidth; x++) {
-                        const i = (y * processWidth + x) * 4;
-                        const diff = (Math.abs(currentFrameData.data[i] - prevFrameData.data[i]) +
-                                      Math.abs(currentFrameData.data[i+1] - prevFrameData.data[i+1]) +
-                                      Math.abs(currentFrameData.data[i+2] - prevFrameData.data[i+2])) / 3;
+                // High precision macro scan loop
+                for (let y = 0; y < lowResH; y += 2) {
+                    for (let x = 0; x < lowResW; x += 2) {
+                        const idx = (y * lowResW + x) * 4;
                         
-                        if (diff > 22) { // Motion sensitivity setting
-                            changedCount++;
-                            sumR += currentFrameData.data[i];
-                            sumG += currentFrameData.data[i+1];
-                            sumB += currentFrameData.data[i+2];
-
-                            if (x < minX) minX = x;
-                            if (x > maxX) maxX = x;
-                            if (y < minY) minY = y;
-                            if (y > maxY) maxY = y;
+                        // Delta measurement across full RGB channels
+                        const dR = Math.abs(currentFrame.data[idx] - prevFrameData.data[idx]);
+                        const dG = Math.abs(currentFrame.data[idx+1] - prevFrameData.data[idx+1]);
+                        const dB = Math.abs(currentFrame.data[idx+2] - prevFrameData.data[idx+2]);
+                        
+                        // Low threshold ensures slow creeping movements are successfully indexed
+                        if ((dR + dG + dB) / 3 > 15) { 
+                            motionDensity++;
+                            if (x < rawMinX) rawMinX = x;
+                            if (x > rawMaxX) rawMaxX = x;
+                            if (y < rawMinY) rawMinY = y;
+                            if (y > rawMaxY) rawMaxY = y;
                         }
                     }
                 }
 
-                if (changedCount > 10) { 
-                    hasMotion = true;
-                    let avgR = Math.round(sumR / changedCount);
-                    let avgG = Math.round(sumG / changedCount);
-                    let avgB = Math.round(sumB / changedCount);
-                    currentObjectChroma = extractChromaProfile(avgR, avgG, avgB);
+                // Minimum density barrier filters background camera noise floor artifacts
+                if (motionDensity > 8) { 
+                    flowDetected = true;
                 }
             }
 
-            if (hasMotion && minX <= maxX && minY <= maxY) {
-                const scaleX = overlay.width / processWidth;
-                const scaleY = overlay.height / processHeight;
-                const padding = 20;
+            if (flowDetected) {
+                const mapX = overlay.width / lowResW;
+                const mapY = overlay.height / lowResH;
                 
-                targetX = Math.max(0, (minX * scaleX) - padding);
-                targetY = Math.max(0, (minY * scaleY) - padding);
-                targetW = Math.min(overlay.width - targetX, ((maxX - minX) * scaleX) + (padding * 2));
-                targetH = Math.min(overlay.height - targetY, ((maxY - minY) * scaleY) + (padding * 2));
+                // Generates fluid elastic target frames around movement zone
+                const borderBuffer = 30;
+                targetX = Math.max(0, (rawMinX * mapX) - borderBuffer);
+                targetY = Math.max(0, (rawMinY * mapY) - borderBuffer);
+                targetW = Math.min(overlay.width - targetX, ((rawMaxX - rawMinX) * mapX) + (borderBuffer * 2));
+                targetH = Math.min(overlay.height - targetY, ((rawMaxY - rawMinY) * mapY) + (borderBuffer * 2));
 
-                // NEW: Triggers instantly at the very first moment movement is detected
-                if (!motionDetectedActive) {
-                    motionDetectedActive = true;
-                    statusMessage.textContent = "INTRUSION VECTOR ALERT";
-                    
-                    if (!isCaptureLocked) {
-                        takeTelemetrySnapshot();
-                    }
+                isMoving = true;
+                statusMessage.textContent = "TARGET VECTOR MOVEMENT RECORDED";
+
+                // Immediate snapshot ignition engine
+                const now = performance.now();
+                if (now - lastCaptureTime > minCaptureInterval) {
+                    triggerInstantCapture(primaryLabel, secondaryConfidence);
+                    lastCaptureTime = now;
                 }
-                clearTimeout(frameMotionResetTimeout);
-                frameMotionResetTimeout = null;
             } else {
-                if (motionDetectedActive && !frameMotionResetTimeout) {
-                    frameMotionResetTimeout = setTimeout(() => {
-                        motionDetectedActive = false;
-                        statusMessage.textContent = "ACTIVE MONITORING LINK ONLINE";
-                        targetW = 0; targetH = 0; // Smoothly close crosshair brackets
-                    }, 500); 
-                }
+                isMoving = false;
+                // Gracefully collapse boundaries to perfect crosshair center when movement settles
+                targetW = 0; targetH = 0;
             }
 
-            // Interpolation engine for sleek bracket movement
-            currentX += (targetX - currentX) * interpolationFactor;
-            currentY += (targetY - currentY) * interpolationFactor;
-            currentW += (targetW - currentW) * interpolationFactor;
-            currentH += (targetH - currentH) * interpolationFactor;
+            // High velocity linear interpolation (lerp) calculations
+            currentX += (targetX - currentX) * lerpSpeed;
+            currentY += (targetY - currentY) * lerpSpeed;
+            currentW += (targetW - currentW) * lerpSpeed;
+            currentH += (targetH - currentH) * lerpSpeed;
 
-            if (currentW > 5) {
+            // Reticle rendering engine
+            if (currentW > 4) {
                 context.strokeStyle = 'var(--success)';
                 context.lineWidth = 2;
-                const len = Math.min(20, currentW * 0.2);
                 
-                context.beginPath(); context.moveTo(currentX, currentY + len); context.lineTo(currentX, currentY); context.lineTo(currentX + len, currentY); context.stroke();
-                context.beginPath(); context.moveTo(currentX + currentW, currentY + len); context.lineTo(currentX + currentW, currentY); context.lineTo(currentX + currentW - len, currentY); context.stroke();
-                context.beginPath(); context.moveTo(currentX, currentY + currentH - len); context.lineTo(currentX, currentY + currentH); context.lineTo(currentX + len, currentY + currentH); stroke();
-                context.beginPath(); context.moveTo(currentX + currentW, currentY + currentH - len); context.lineTo(currentX + currentW, currentY + currentH); context.lineTo(currentX + currentW - len, currentY + currentH); context.stroke();
+                // Draw responsive geometric HUD corners
+                const bracketSize = Math.min(25, currentW * 0.25);
+                
+                context.beginPath(); context.moveTo(currentX, currentY + bracketSize); context.lineTo(currentX, currentY); context.lineTo(currentX + bracketSize, currentY); context.stroke();
+                context.beginPath(); context.moveTo(currentX + currentW, currentY + bracketSize); context.lineTo(currentX + currentW, currentY); context.lineTo(currentX + currentW - bracketSize, currentY); context.stroke();
+                context.beginPath(); context.moveTo(currentX, currentY + currentH - bracketSize); context.lineTo(currentX, currentY + currentH); context.lineTo(currentX + bracketSize, currentY + currentH); context.stroke();
+                context.beginPath(); context.moveTo(currentX + currentW, currentY + currentH - bracketSize); context.lineTo(currentX + currentW, currentY + currentH); context.lineTo(currentX + currentW - bracketSize, currentY + currentH); context.stroke();
 
+                // Dynamic data tag placement strings
                 context.fillStyle = 'var(--success)';
-                context.font = 'bold 11px monospace';
-                context.fillText(`AI MATCH: ${currentObjectClassification}`, currentX + 4, currentY - 24);
-                context.fillText(`SPECTRUM: ${currentObjectChroma}`, currentX + 4, currentY - 8);
+                context.font = '600 12px system-ui';
+                context.fillText(`LOCK: ${primaryLabel}`, currentX + 6, currentY - 22);
+                if(secondaryConfidence) {
+                    context.fillStyle = 'var(--alert)';
+                    context.fillText(secondaryConfidence, currentX + 6, currentY - 6);
+                }
             }
 
-            prevFrameData = currentFrameData;
-            animationFrameId = requestAnimationFrame(processFrameLoop);
+            prevFrameData = currentFrame;
+            animationFrameId = requestAnimationFrame(track);
         }
 
-        animationFrameId = requestAnimationFrame(processFrameLoop);
+        animationFrameId = requestAnimationFrame(track);
     }
 
-    function takeTelemetrySnapshot() {
-        isCaptureLocked = true; // Engage anti-spam throttle loop
+    function triggerInstantCapture(labelText, confidenceText) {
         activeLogCount++;
-        logCount.textContent = `${activeLogCount} IMAGES`;
+        logCount.textContent = `${activeLogCount} CAPTURES`;
 
-        const captureCanvas = document.createElement('canvas');
-        captureCanvas.width = video.videoWidth;
-        captureCanvas.height = video.videoHeight;
-        const captureCtx = captureCanvas.getContext('2d');
-        captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+        const snappit = document.createElement('canvas');
+        snappit.width = video.videoWidth;
+        snappit.height = video.videoHeight;
+        const snapCtx = snappit.getContext('2d');
+        snapCtx.drawImage(video, 0, 0, snappit.width, snappit.height);
         
-        const dataUrl = captureCanvas.toDataURL('image/jpeg');
-        const timestamp = new Date().toLocaleTimeString();
+        const outputUri = snappit.toDataURL('image/jpeg', 0.85);
+        const logTime = new Date().toLocaleTimeString();
         
         const card = document.createElement('div');
         card.className = 'capture-card';
-        
-        // Caches local text states immediately for historic snapshot preservation
-        const snapshotClass = currentObjectClassification;
-        const snapshotChroma = currentObjectChroma;
 
         card.innerHTML = `
-            <img src="${dataUrl}" alt="Secured Telemetry Snapshot" />
-            <div class="capture-details">
-                <div class="meta-line-main">
-                    <div class="capture-name">LIVE_SNAP_${6000 + activeLogCount}</div>
-                    <div class="capture-time">[${timestamp}]</div>
-                </div>
-                <div class="intelligence-box">
-                    DETECTED TARGET: <span>${snapshotClass}</span><br>
-                    VISUAL METRIC: <span>${snapshotChroma}</span>
-                </div>
-                <a href="${dataUrl}" download="Matrix_Instant_Snap_${6000 + activeLogCount}.jpg" class="download-btn">DOWNLOAD</a>
+            <img src="${outputUri}" alt="System Frame Log" />
+            <div class="meta-line-main">
+                <div class="capture-name">MATRIX_FLOW_${8000 + activeLogCount}</div>
+                <div class="capture-time">[${logTime}]</div>
             </div>
+            <div class="intelligence-box">
+                CORE ANALYSIS: <span>${labelText}</span><br>
+                METRIC STATUS: <span>${confidenceText || 'System Verifying Context...'}</span>
+            </div>
+            <a href="${outputUri}" download="Matrix_HighPrecision_${8000 + activeLogCount}.jpg" class="download-btn">EXTRACT DATA FRAME</a>
         `;
         
         captureContainer.insertBefore(card, captureContainer.firstChild);
-
-        // Clear lock state after delay threshold to await next dynamic event entry
-        setTimeout(() => {
-            isCaptureLocked = false;
-        }, lockDurationMs);
     }
 
     selector.addEventListener('change', (e) => {
-        if (e.target.value) executeRescueStream(e.target.value);
+        if (e.target.value) bindCameraStream(e.target.value);
     });
 </script>
 </body>
