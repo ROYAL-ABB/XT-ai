@@ -3,375 +3,298 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Camera Diagnostic & Testing Tool</title>
+    <title>xt-ai | Camera Diagnostic Tool</title>
     <style>
         :root {
-            --bg-dark: #0f172a;
-            --card-dark: #1e293b;
-            --accent: #3b82f6;
-            --accent-hover: #2563eb;
-            --success: #10b981;
-            --error: #ef4444;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
+            --bg: #0b0f19;
+            --panel: #161f30;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --success: #059669;
+            --error: #dc2626;
+            --text: #f1f5f9;
+            --text-muted: #64748b;
         }
 
         body {
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-main);
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
             margin: 0;
-            padding: 24px;
+            padding: 20px;
             display: flex;
             justify-content: center;
         }
 
-        .dashboard {
+        .app-container {
             width: 100%;
-            max-width: 1100px;
+            max-width: 1000px;
             display: grid;
             grid-template-columns: 1fr;
-            gap: 24px;
+            gap: 20px;
         }
 
-        @media (min-width: 900px) {
-            .dashboard {
-                grid-template-columns: 3fr 2fr;
-            }
+        @media (min-width: 768px) {
+            .app-container { grid-template-columns: 3fr 2fr; }
         }
 
         header {
             grid-column: 1 / -1;
-            border-bottom: 1px solid #334155;
-            padding-bottom: 16px;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #1e293b;
         }
 
-        h1 { margin: 0 0 6px 0; font-size: 2.2rem; font-weight: 700; }
-        p { margin: 0; color: var(--text-muted); }
+        h1 { margin: 0 0 5px 0; font-size: 1.8rem; letter-spacing: 0.5px; }
+        header p { margin: 0; color: var(--text-muted); font-size: 0.95rem; }
 
-        .card {
-            background: var(--card-dark);
-            border-radius: 16px;
+        .panel {
+            background: var(--panel);
+            border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-            border: 1px solid #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border: 1px solid #1e293b;
         }
 
-        .feed-container {
-            position: relative;
+        .viewer-box {
             width: 100%;
             aspect-ratio: 16 / 9;
-            background: #020617;
-            border-radius: 12px;
+            background: #000;
+            border-radius: 8px;
             overflow: hidden;
-            border: 1px solid #475569;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #334155;
         }
 
         video {
             width: 100%;
             height: 100%;
             object-fit: contain;
-            transition: filter 0.2s ease;
         }
 
-        .filter-normal { filter: none; }
-        .filter-mono { filter: grayscale(1); }
-        .filter-invert { filter: invert(1); }
-        .filter-bright { filter: contrast(1.2) brightness(1.2); }
-
-        .action-bar {
-            margin-top: 16px;
+        .controls-row {
+            margin-top: 15px;
             display: flex;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 10px;
         }
 
         select, button {
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 0.95rem;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 0.9rem;
             font-weight: 600;
             border: none;
             cursor: pointer;
-            transition: all 0.2s ease;
         }
 
         select {
-            background: #334155;
-            color: var(--text-main);
+            background: #1e293b;
+            color: var(--text);
+            border: 1px solid #334155;
             flex: 1;
-            min-width: 200px;
-            border: 1px solid #475569;
+            min-width: 150px;
         }
 
-        .btn-primary { background: var(--accent); color: white; }
-        .btn-primary:hover { background: var(--accent-hover); }
-        .btn-success { background: var(--success); color: white; }
-        .btn-secondary { background: #475569; color: white; }
+        .btn-blue { background: var(--accent); color: white; }
+        .btn-blue:hover { background: var(--accent-hover); }
+        .btn-green { background: var(--success); color: white; }
 
-        .diagnostic-list {
+        .data-list {
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 12px;
         }
 
-        .diag-item {
+        .data-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #334155;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #1e293b;
         }
 
-        .diag-item:last-child { border: none; }
-        .label { color: var(--text-muted); font-size: 0.95rem; }
-        .value { font-family: monospace; font-size: 1.05rem; font-weight: 600; }
+        .data-row:last-child { border: none; }
+        .lbl { color: var(--text-muted); }
+        .val { font-family: monospace; font-weight: bold; }
 
-        .badge {
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 700;
-        }
-        .badge-off { background: rgba(239, 68, 68, 0.15); color: var(--error); }
-        .badge-on { background: rgba(16, 185, 129, 0.15); color: var(--success); }
-
-        .error-log {
+        .log-box {
             grid-column: 1 / -1;
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 8px;
-            padding: 14px;
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            border-radius: 6px;
+            padding: 12px;
             color: #fca5a5;
             display: none;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
-        .gallery-section {
-            grid-column: 1 / -1;
-        }
-
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 16px;
-            margin-top: 12px;
-        }
-
-        .gallery-grid img {
+        #gallery img {
             width: 100%;
-            border-radius: 8px;
-            border: 2px solid #334155;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            border-radius: 6px;
+            margin-top: 10px;
+            border: 1px solid #334155;
         }
     </style>
 </head>
 <body>
 
-<div class="dashboard">
+<div class="app-container">
     <header>
-        <h1>Hardware Camera Tester</h1>
-        <p>Advanced real-time diagnostics for built-in and external cabled video devices.</p>
+        <h1>xt-ai // Live Cam System</h1>
+        <p>Direct hardware testing utility pipeline.</p>
     </header>
 
-    <div id="errorLog" class="error-log"></div>
+    <div id="logBox" class="log-box"></div>
 
-    <div class="card">
-        <div class="feed-container">
-            <video id="preview" autoplay playsinline muted></video>
+    <!-- Screen Render Feed -->
+    <div class="panel">
+        <div class="viewer-box">
+            <video id="viewscreen" autoplay playsinline muted></video>
         </div>
-        
-        <div class="action-bar">
-            <button class="btn-primary" id="startBtn">1. Grant Access & Scan</button>
-            <select id="deviceSelector">
-                <option value="">Select Video Source...</option>
-            </select>
-            <button class="btn-success" id="captureBtn">Take Snapshot</button>
-        </div>
-
-        <div class="action-bar" style="margin-top: 12px; border-top: 1px solid #334155; padding-top: 12px;">
-            <span style="color: var(--text-muted); align-self: center; font-size: 0.9rem;">Test Filters:</span>
-            <button class="btn-secondary" onclick="setFilter('filter-normal')">Normal</button>
-            <button class="btn-secondary" onclick="setFilter('filter-mono')">B&W</button>
-            <button class="btn-secondary" onclick="setFilter('filter-bright')">High Contrast</button>
-            <button class="btn-secondary" onclick="setFilter('filter-invert')">Invert</button>
+        <div class="controls-row">
+            <button class="btn-blue" id="initBtn">Scan Channels</button>
+            <select id="selector"><option value="">Awaiting Device Initialization...</option></select>
+            <button class="btn-green" id="snapBtn">Capture Frame</button>
         </div>
     </div>
 
-    <div class="card">
-        <h2 style="margin: 0 0 20px 0; font-size: 1.4rem;">Hardware Analytics</h2>
-        <div class="diagnostic-list">
-            <div class="diag-item">
-                <span class="label">Stream Engine Status</span>
-                <span id="statusBadge" class="badge badge-off">Offline</span>
-            </div>
-            <div class="diag-item">
-                <span class="label">Hardware Resolution</span>
-                <span class="value" id="resVal">-</span>
-            </div>
-            <div class="diag-item">
-                <span class="label">Aspect Ratio Config</span>
-                <span class="value" id="aspectVal">-</span>
-            </div>
-            <div class="diag-item">
-                <span class="label">Target Frame Rate</span>
-                <span class="value" id="fpsVal">-</span>
-            </div>
-            <div class="diag-item">
-                <span class="label">Connection Port Target</span>
-                <span class="value" id="modeVal">External / Cable Preferred</span>
-            </div>
+    <!-- Performance Telemetry -->
+    <div class="panel">
+        <h3 style="margin-top: 0; border-bottom: 1px solid #1e293b; padding-bottom: 8px;">Telemetry Logs</h3>
+        <div class="data-list">
+            <div class="data-row"><span class="lbl">Engine Connection</span><span id="connState" style="color:var(--error)">Offline</span></div>
+            <div class="data-row"><span class="lbl">Active Resolution</span><span id="resOut" class="val">-</span></div>
+            <div class="data-row"><span class="lbl">Aspect Ratio Matrix</span><span id="aspectOut" class="val">-</span></div>
+            <div class="data-row"><span class="lbl">Frame Rate Registry</span><span id="fpsOut" class="val">-</span></div>
         </div>
-    </div>
-
-    <div class="card gallery-section">
-        <h3 style="margin: 0;">Captured Test Frames</h3>
-        <div id="snapshotGallery" class="gallery-grid"></div>
+        <div id="gallery"></div>
     </div>
 </div>
 
 <script>
-    const video = document.getElementById('preview');
-    const startBtn = document.getElementById('startBtn');
-    const deviceSelector = document.getElementById('deviceSelector');
-    const captureBtn = document.getElementById('captureBtn');
-    const errorLog = document.getElementById('errorLog');
-    const gallery = document.getElementById('snapshotGallery');
+    const video = document.getElementById('viewscreen');
+    const initBtn = document.getElementById('initBtn');
+    const selector = document.getElementById('selector');
+    const snapBtn = document.getElementById('snapBtn');
+    const logBox = document.getElementById('logBox');
+    
+    const connState = document.getElementById('connState');
+    const resOut = document.getElementById('resOut');
+    const aspectOut = document.getElementById('aspectOut');
+    const fpsOut = document.getElementById('fpsOut');
 
-    const statusBadge = document.getElementById('statusBadge');
-    const resVal = document.getElementById('resVal');
-    const aspectVal = document.getElementById('aspectVal');
-    const fpsVal = document.getElementById('fpsVal');
+    let localStream = null;
 
-    let activeStream = null;
-
-    startBtn.addEventListener('click', async () => {
-        showError("");
+    initBtn.addEventListener('click', async () => {
+        printError("");
         try {
-            // Initial simple permission pull to avoid configuration crash issues
-            await navigator.mediaDevices.getUserMedia({ video: true });
-            await indexDevices();
-            startBtn.textContent = "Rescan Devices";
-        } catch (err) {
-            handleHardwareError(err);
+            // Absolute bare minimum native access request. No filters, no options.
+            // This bypasses the browser's target-resolution safety checks entirely.
+            const rawAccess = await navigator.mediaDevices.getUserMedia({ video: true });
+            
+            // Instantly shutdown this temp sample channel so it doesn't lock up hardware
+            rawAccess.getTracks().forEach(t => t.stop());
+            
+            await findVideoChannels();
+            initBtn.textContent = "Refresh Channels";
+        } catch (e) {
+            processCrash(e);
         }
     });
 
-    async function indexDevices() {
-        const structuralDevices = await navigator.mediaDevices.enumerateDevices();
-        const videoChannels = structuralDevices.filter(d => d.kind === 'videoinput');
+    async function findVideoChannels() {
+        const hardwareRegistry = await navigator.mediaDevices.enumerateDevices();
+        const cams = hardwareRegistry.filter(d => d.kind === 'videoinput');
 
-        deviceSelector.innerHTML = '';
-        
-        if(videoChannels.length === 0) {
-            deviceSelector.innerHTML = '<option>No video channels discovered</option>';
+        selector.innerHTML = '';
+        if (cams.length === 0) {
+            selector.innerHTML = '<option>Zero camera hardware discovered</option>';
             return;
         }
 
-        videoChannels.forEach((device, index) => {
-            const opt = document.createElement('option');
-            opt.value = device.deviceId;
-            opt.text = device.label || `Video Input ${index + 1}`;
-            deviceSelector.appendChild(opt);
+        cams.forEach((cam, index) => {
+            const node = document.createElement('option');
+            node.value = cam.deviceId;
+            node.text = cam.label || `Camera Source Line ${index + 1}`;
+            selector.appendChild(node);
         });
 
-        connectToCamera(videoChannels[0].deviceId);
+        // Autoplay the top index item using completely open rules
+        fireStream(cams[0].deviceId);
     }
 
-    // The Fix: Tiered configuration logic fallback matrix
-    async function connectToCamera(id) {
-        if (activeStream) {
-            activeStream.getTracks().forEach(t => t.stop());
+    async function fireStream(hardwareId) {
+        if (localStream) {
+            localStream.getTracks().forEach(t => t.stop());
         }
 
-        // Try options progressively from flexible native to strict safe zones
-        const optimizationTiers = [
-            { video: { deviceId: { exact: id } } }, // Tier 1: Pull camera native defaults (Safest for cabled devices)
-            { video: { deviceId: { exact: id }, width: { ideal: 1920 }, height: { ideal: 1080 } } }, // Tier 2: Standard HD fallback
-            { video: { deviceId: { exact: id }, width: { ideal: 1280 }, height: { ideal: 720 } } }  // Tier 3: Basic SD fallback
-        ];
-
-        let streamAcquired = false;
-
-        for (let config of optimizationTiers) {
-            try {
-                activeStream = await navigator.mediaDevices.getUserMedia(config);
-                video.srcObject = activeStream;
-                streamAcquired = true;
-                showError(""); // Clear any previous tier attempts failures
-                break;
-            } catch (tierError) {
-                console.warn("Configuration tier failed, jumping to next setup option...", tierError);
+        // BARE METAL RULESET: We request nothing but the raw device channel ID.
+        // The browser will automatically take whatever configuration the cable provides natively.
+        const bareConstraints = {
+            video: {
+                deviceId: hardwareId ? { exact: hardwareId } : undefined
             }
-        }
-
-        if (!streamAcquired) {
-            handleHardwareError(new Error("The external device rejected all standard browser handshake streams. Please reconnect your cable connection."));
-            return;
-        }
-
-        statusBadge.textContent = "Online";
-        statusBadge.className = "badge badge-on";
-        
-        video.onloadedmetadata = () => {
-            const track = activeStream.getVideoTracks()[0];
-            const dataSettings = track.getSettings();
-            
-            const w = dataSettings.width || video.videoWidth;
-            const h = dataSettings.height || video.videoHeight;
-            
-            resVal.textContent = `${w} x ${h}`;
-            
-            const calculateGcd = (x, y) => y ? calculateGcd(y, x % y) : x;
-            const shareDiv = calculateGcd(w, h);
-            aspectVal.textContent = `${w/shareDiv}:${h/shareDiv}`;
-            
-            fpsVal.textContent = dataSettings.frameRate ? `${Math.round(dataSettings.frameRate)} FPS` : "Dynamic";
         };
-    }
 
-    function setFilter(className) {
-        video.className = className;
-    }
-
-    function showError(msg) {
-        if(!msg) {
-            errorLog.style.display = "none";
-            return;
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia(bareConstraints);
+            video.srcObject = localStream;
+            
+            connState.textContent = "Connected";
+            connState.style.color = "var(--success)";
+            
+            video.onloadedmetadata = () => {
+                const liveTrack = localStream.getVideoTracks()[0];
+                const liveData = liveTrack.getSettings();
+                
+                // Read whatever pixel parameters the device inherently booted into
+                const w = liveData.width || video.videoWidth;
+                const h = liveData.height || video.videoHeight;
+                
+                resOut.textContent = `${w} x ${h}`;
+                
+                const processGcd = (a, b) => b ? processGcd(b, a % b) : a;
+                const div = processGcd(w, h);
+                aspectOut.textContent = `${w/div}:${h/div}`;
+                
+                fpsOut.textContent = liveData.frameRate ? `${Math.round(liveData.frameRate)} Hz` : "Auto-Controlled";
+            };
+        } catch (e) {
+            processCrash(e);
         }
-        errorLog.textContent = msg;
-        errorLog.style.display = "block";
     }
 
-    function handleHardwareError(err) {
-        console.error(err);
-        statusBadge.textContent = "Error";
-        statusBadge.className = "badge badge-off";
-        
-        if (err.name === 'NotAllowedError') {
-            showError("Access Blocked: Change site permissions to 'Allow' in your browser search bar.");
-        } else {
-            showError(`Hardware Issue: ${err.message || 'Could not securely bind the cable connection stream.'}`);
-        }
+    function printError(msg) {
+        if(!msg) { logBox.style.display = "none"; return; }
+        logBox.textContent = msg;
+        logBox.style.display = "block";
     }
 
-    captureBtn.addEventListener('click', () => {
-        if (!activeStream) return;
+    function processCrash(e) {
+        console.error(e);
+        connState.textContent = "Fault";
+        connState.style.color = "var(--error)";
+        printError(`System Handshake Failed: ${e.name} - ${e.message}. The browser rejected standard rendering parameters.`);
+    }
+
+    snapBtn.addEventListener('click', () => {
+        if (!localStream) return;
         const canvas = document.createElement('canvas');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
         
-        ctx.filter = getComputedStyle(video).filter;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        
-        const photo = document.createElement('img');
-        photo.src = canvas.toDataURL('image/png');
-        gallery.insertBefore(photo, gallery.firstChild);
+        const gallery = document.getElementById('gallery');
+        gallery.innerHTML = ""; // Single frame buffer
+        const view = document.createElement('img');
+        view.src = canvas.toDataURL('image/png');
+        gallery.appendChild(view);
     });
 
-    deviceSelector.addEventListener('change', (e) => {
-        if(e.target.value) connectToCamera(e.target.value);
+    selector.addEventListener('change', (e) => {
+        if (e.target.value) fireStream(e.target.value);
     });
 </script>
 </body>
