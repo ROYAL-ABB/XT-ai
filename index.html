@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xt-ai // Pure Hardware Cam Tester</title>
+    <title>xt-ai // Live Cam System</title>
     <style>
         :root {
             --bg: #090d16;
@@ -99,6 +99,7 @@
 
         .btn-blue { background: var(--accent); color: white; }
         .btn-green { background: var(--success); color: white; }
+        .btn-warn { background: var(--warn); color: white; }
 
         .data-list {
             display: flex;
@@ -141,7 +142,7 @@
         <div class="controls-row">
             <button class="btn-blue" id="initBtn">Scan Channels</button>
             <select id="selector"><option value="">Awaiting Device Scan...</option></select>
-            <button class="btn-green" id="snapBtn">Capture Frame</button>
+            <button class="btn-warn" id="bypassBtn" style="display:none;">Force Default Cam</button>
         </div>
     </div>
 
@@ -160,6 +161,7 @@
     const video = document.getElementById('viewscreen');
     const initBtn = document.getElementById('initBtn');
     const selector = document.getElementById('selector');
+    const bypassBtn = document.getElementById('bypassBtn');
     const statusAlert = document.getElementById('statusAlert');
     
     const connState = document.getElementById('connState');
@@ -171,13 +173,26 @@
 
     initBtn.addEventListener('click', async () => {
         showAlert("", "");
+        bypassBtn.style.display = "none";
         try {
-            // Step 1: Request bare minimum initialization permission
             const check = await navigator.mediaDevices.getUserMedia({ video: true });
-            check.getTracks().forEach(t => t.stop()); // clear test track immediately
+            check.getTracks().forEach(t => t.stop()); 
             await findVideoChannels();
         } catch (e) {
             showAlert("error", `Permission/Access Blocked: ${e.message}`);
+        }
+    });
+
+    // Force default bypass track if the indexed hardware line fails
+    bypassBtn.addEventListener('click', async () => {
+        showAlert("", "");
+        if (localStream) { localStream.getTracks().forEach(t => t.stop()); }
+        try {
+            // Absolute generic request — forces system to pick whatever responds first
+            localStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            bindStreamToUI(localStream, "Forced System Default");
+        } catch (e) {
+            showAlert("error", `Bypass failed. System hardware layer is entirely unresponsive.`);
         }
     });
 
@@ -198,65 +213,55 @@
             selector.appendChild(node);
         });
 
-        // Auto launch first picked item using new protective matrix
         executeRescueStream(videoDevices[0].deviceId);
     }
 
     async function executeRescueStream(hardwareId) {
-        if (localStream) {
-            localStream.getTracks().forEach(t => t.stop());
-        }
+        if (localStream) { localStream.getTracks().forEach(t => t.stop()); }
 
-        // Configuration Tier 1: Pure basic request
         let options = { video: { deviceId: hardwareId ? { exact: hardwareId } : undefined } };
         
         try {
-            await startVideoFeed(options);
-            modeOut.textContent = "Native Hardware Mode";
+            const stream = await navigator.mediaDevices.getUserMedia(options);
+            bindStreamToUI(stream, "Native Hardware Mode");
         } catch (firstError) {
-            console.warn("Standard stream failed. Initiating Rescue Fallback Sequence...", firstError);
-            
-            // Configuration Tier 2: The Rescue Matrix
-            // Strips down resolutions completely so weak USB port bandwidth or minor software locks are bypassed.
-            showAlert("warn", "System warning: Camera responded with a lock error. Attempting to bypass hardware restrictions...");
+            console.warn("Standard stream failed. Triggering protective mode...", firstError);
             
             let rescueOptions = {
                 video: {
                     deviceId: hardwareId ? { exact: hardwareId } : undefined,
                     width: { ideal: 640 }, 
-                    height: { ideal: 480 },
-                    frameRate: { max: 15 } // Lower data rate significantly to force connection
+                    height: { ideal: 480 }
                 }
             };
 
             try {
-                await startVideoFeed(rescueOptions);
-                modeOut.textContent = "Safe-Mode Rescue Active";
-                showAlert("", ""); // Clear the warning if safe mode succeeded
+                const stream = await navigator.mediaDevices.getUserMedia(rescueOptions);
+                bindStreamToUI(stream, "Safe-Mode Rescue Active");
             } catch (secondError) {
-                console.error("Rescue configuration matrix exhausted.", secondError);
+                console.error("Hardware link blocked completely.");
                 connState.textContent = "Lock State";
                 connState.style.color = "var(--error)";
-                showAlert("error", "Hardware Critical: Your computer reports the camera is physically busy in another task. Please disconnect/reconnect the camera cable or restart your system.");
+                bypassBtn.style.display = "inline-block"; // Reveal the skip option
+                showAlert("error", "Hardware Critical: Your computer reports the camera is physically busy in another task. Click 'Force Default Cam' to bypass it.");
             }
         }
     }
 
-    async function startVideoFeed(constraints) {
-        localStream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = localStream;
+    function bindStreamToUI(stream, modeText) {
+        localStream = stream;
+        video.srcObject = stream;
         
         connState.textContent = "Online";
         connState.style.color = "var(--success)";
+        modeOut.textContent = modeText;
+        showAlert("", ""); 
         
         video.onloadedmetadata = () => {
-            const w = video.videoWidth;
-            const h = video.videoHeight;
-            resOut.textContent = `${w} x ${h}`;
-            
+            resOut.textContent = `${video.videoWidth} x ${video.videoHeight}`;
             const gcd = (a, b) => b ? gcd(b, a % b) : a;
-            const div = gcd(w, h);
-            aspectOut.textContent = `${w/div}:${h/div}`;
+            const div = gcd(video.videoWidth, video.videoHeight);
+            aspectOut.textContent = `${video.videoWidth/div}:${video.videoHeight/div}`;
         };
     }
 
