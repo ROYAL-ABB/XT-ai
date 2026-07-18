@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xt-ai // Live Cam System</title>
+    <title>xt-ai // Live Cam & Face Capture Suite</title>
+    <!-- Core Computer Vision Dependency Pipeline -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/tracking-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/data/face-min.js"></script>
     <style>
         :root {
             --bg: #090d16;
@@ -14,6 +17,7 @@
             --warn: #d97706;
             --text: #f1f5f9;
             --text-muted: #64748b;
+            --border: #1e293b;
         }
 
         body {
@@ -24,46 +28,58 @@
             padding: 20px;
             display: flex;
             justify-content: center;
+            height: 100vh;
+            box-sizing: border-box;
         }
 
         .app-container {
             width: 100%;
-            max-width: 1000px;
+            max-width: 1300px;
             display: grid;
             grid-template-columns: 1fr;
             gap: 20px;
+            height: 100%;
         }
 
-        @media (min-width: 768px) {
-            .app-container { grid-template-columns: 3fr 2fr; }
+        @media (min-width: 992px) {
+            .app-container { 
+                grid-template-columns: 2.8fr 1.2fr;
+                grid-template-rows: auto 1fr;
+            }
         }
 
         header {
             grid-column: 1 / -1;
             text-align: center;
             padding-bottom: 10px;
-            border-bottom: 1px solid #1e293b;
+            border-bottom: 1px solid var(--border);
         }
 
-        h1 { margin: 0 0 5px 0; font-size: 1.8rem; }
+        h1 { margin: 0 0 5px 0; font-size: 1.8rem; letter-spacing: 0.5px; }
         header p { margin: 0; color: var(--text-muted); }
 
         .panel {
             background: var(--panel);
             border-radius: 12px;
             padding: 20px;
-            border: 1px solid #1e293b;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .workspace-left {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
 
         .viewer-box {
             width: 100%;
+            position: relative;
             aspect-ratio: 16 / 9;
             background: #000;
             border-radius: 8px;
             overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             border: 1px solid #334155;
         }
 
@@ -73,8 +89,18 @@
             object-fit: contain;
         }
 
+        /* Responsive Canvas Overlays for Face Detection */
+        canvas#faceOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
         .controls-row {
-            margin-top: 15px;
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
@@ -98,21 +124,73 @@
         }
 
         .btn-blue { background: var(--accent); color: white; }
-        .btn-green { background: var(--success); color: white; }
         .btn-warn { background: var(--warn); color: white; }
 
-        .data-list {
+        /* Right Side Sidebar: Capture Feed List */
+        .sidebar-right {
+            max-height: 75vh;
+            overflow: hidden;
+        }
+
+        .sidebar-title {
+            margin: 0 0 15px 0;
+            font-size: 1.2rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .counter-badge {
+            background: var(--accent);
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        .capture-list {
+            flex: 1;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
             gap: 12px;
+            padding-right: 5px;
         }
 
-        .data-row {
+        /* Captured Item Styling Cards */
+        .capture-card {
             display: flex;
-            justify-content: space-between;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #1e293b;
+            align-items: center;
+            gap: 12px;
+            background: #1c2638;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #2e3f59;
+            animation: slideIn 0.3s ease-out;
         }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .capture-card img {
+            width: 70px;
+            height: 70px;
+            border-radius: 6px;
+            object-fit: cover;
+            border: 1px solid #475569;
+        }
+
+        .capture-details {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .capture-name { font-size: 0.85rem; font-weight: 600; color: #60a5fa; }
+        .capture-time { font-size: 0.75rem; color: var(--text-muted); }
 
         .status-msg {
             grid-column: 1 / -1;
@@ -129,47 +207,74 @@
 
 <div class="app-container">
     <header>
-        <h1>xt-ai // Live Cam System</h1>
-        <p>Direct hardware testing utility pipeline.</p>
+        <h1>xt-ai // Biometric Processing Terminal</h1>
+        <p>Real-time autonomous face tracking & logging utility matrix.</p>
     </header>
 
     <div id="statusAlert" class="status-msg"></div>
 
-    <div class="panel">
+    <!-- Left Workstation Container -->
+    <div class="panel workspace-left">
         <div class="viewer-box">
             <video id="viewscreen" autoplay playsinline muted></video>
+            <!-- Tracking Box Render Layer -->
+            <canvas id="faceOverlay"></canvas>
         </div>
         <div class="controls-row">
             <button class="btn-blue" id="initBtn">Scan Channels</button>
-            <select id="selector"><option value="">Awaiting Device Scan...</option></select>
+            <select id="selector"><option value="">Awaiting Hardware Scan...</option></select>
             <button class="btn-warn" id="bypassBtn" style="display:none;">Force Default Cam</button>
         </div>
     </div>
 
-    <div class="panel">
-        <h3 style="margin-top: 0; border-bottom: 1px solid #1e293b; padding-bottom: 8px;">Telemetry Logs</h3>
-        <div class="data-list">
-            <div class="data-row"><span class="lbl">Link Engine</span><span id="connState" style="color:var(--error)">Offline</span></div>
-            <div class="data-row"><span class="lbl">Resolution</span><span id="resOut">-</span></div>
-            <div class="data-row"><span class="lbl">Aspect Ratio</span><span id="aspectOut">-</span></div>
-            <div class="data-row"><span class="lbl">Device Mode</span><span id="modeOut">Standard Protocol</span></div>
+    <!-- Right Face Logger Sidebar Panel -->
+    <div class="panel sidebar-right">
+        <h3 class="sidebar-title">
+            Identity Capture Log 
+            <span class="counter-badge" id="logCount">0 Logs</span>
+        </h3>
+        <div class="capture-list" id="captureContainer">
+            <!-- Dynamic capture elements insert here natively -->
         </div>
     </div>
 </div>
 
 <script>
     const video = document.getElementById('viewscreen');
+    const overlay = document.getElementById('faceOverlay');
+    const context = overlay.getContext('2d');
+    
     const initBtn = document.getElementById('initBtn');
     const selector = document.getElementById('selector');
     const bypassBtn = document.getElementById('bypassBtn');
     const statusAlert = document.getElementById('statusAlert');
-    
-    const connState = document.getElementById('connState');
-    const resOut = document.getElementById('resOut');
-    const aspectOut = document.getElementById('aspectOut');
-    const modeOut = document.getElementById('modeOut');
+    const captureContainer = document.getElementById('captureContainer');
+    const logCount = document.getElementById('logCount');
 
     let localStream = null;
+    let faceTracker = null;
+    let trackerTask = null;
+    
+    // Cooldown variables to prevent filling the log with 60 images per second
+    let lastCaptureTime = 0;
+    const CAPTURE_COOLDOWN_MS = 3000; 
+    let activeLogCount = 0;
+
+    // Load Synthesized Shutter Sound System
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playShutterSound() {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.16);
+    }
 
     initBtn.addEventListener('click', async () => {
         showAlert("", "");
@@ -179,20 +284,18 @@
             check.getTracks().forEach(t => t.stop()); 
             await findVideoChannels();
         } catch (e) {
-            showAlert("error", `Permission/Access Blocked: ${e.message}`);
+            showAlert("error", `Permission Blocked: ${e.message}`);
         }
     });
 
-    // Force default bypass track if the indexed hardware line fails
     bypassBtn.addEventListener('click', async () => {
         showAlert("", "");
         if (localStream) { localStream.getTracks().forEach(t => t.stop()); }
         try {
-            // Absolute generic request — forces system to pick whatever responds first
             localStream = await navigator.mediaDevices.getUserMedia({ video: true });
-            bindStreamToUI(localStream, "Forced System Default");
+            bindStreamToUI(localStream);
         } catch (e) {
-            showAlert("error", `Bypass failed. System hardware layer is entirely unresponsive.`);
+            showAlert("error", `Bypass failed. System hardware layer entirely blocked.`);
         }
     });
 
@@ -218,15 +321,12 @@
 
     async function executeRescueStream(hardwareId) {
         if (localStream) { localStream.getTracks().forEach(t => t.stop()); }
-
         let options = { video: { deviceId: hardwareId ? { exact: hardwareId } : undefined } };
         
         try {
             const stream = await navigator.mediaDevices.getUserMedia(options);
-            bindStreamToUI(stream, "Native Hardware Mode");
+            bindStreamToUI(stream);
         } catch (firstError) {
-            console.warn("Standard stream failed. Triggering protective mode...", firstError);
-            
             let rescueOptions = {
                 video: {
                     deviceId: hardwareId ? { exact: hardwareId } : undefined,
@@ -234,35 +334,100 @@
                     height: { ideal: 480 }
                 }
             };
-
             try {
                 const stream = await navigator.mediaDevices.getUserMedia(rescueOptions);
-                bindStreamToUI(stream, "Safe-Mode Rescue Active");
+                bindStreamToUI(stream);
             } catch (secondError) {
-                console.error("Hardware link blocked completely.");
-                connState.textContent = "Lock State";
-                connState.style.color = "var(--error)";
-                bypassBtn.style.display = "inline-block"; // Reveal the skip option
-                showAlert("error", "Hardware Critical: Your computer reports the camera is physically busy in another task. Click 'Force Default Cam' to bypass it.");
+                bypassBtn.style.display = "inline-block";
+                showAlert("error", "Hardware Critical: Camera reports busy. Reset USB cable or click 'Force Default Cam'.");
             }
         }
     }
 
-    function bindStreamToUI(stream, modeText) {
+    function bindStreamToUI(stream) {
         localStream = stream;
         video.srcObject = stream;
-        
-        connState.textContent = "Online";
-        connState.style.color = "var(--success)";
-        modeOut.textContent = modeText;
         showAlert("", ""); 
         
         video.onloadedmetadata = () => {
-            resOut.textContent = `${video.videoWidth} x ${video.videoHeight}`;
-            const gcd = (a, b) => b ? gcd(b, a % b) : a;
-            const div = gcd(video.videoWidth, video.videoHeight);
-            aspectOut.textContent = `${video.videoWidth/div}:${video.videoHeight/div}`;
+            // Adjust overlay matrix to match the camera feeds physical aspect ratios
+            overlay.width = video.videoWidth;
+            overlay.height = video.videoHeight;
+            initFaceTrackingPipeline();
         };
+    }
+
+    // Initialize tracking.js engine loop
+    function initFaceTrackingPipeline() {
+        if (trackerTask) {
+            trackerTask.stop();
+        }
+
+        faceTracker = new tracking.ObjectTracker('face');
+        faceTracker.setInitialScale(4);
+        faceTracker.setStepSize(2);
+        faceTracker.setEdgesDensity(0.1);
+
+        // Track listener loop frame scanner
+        faceTracker.on('track', function(event) {
+            context.clearRect(0, 0, overlay.width, overlay.height);
+            
+            if (event.data.length === 0) return;
+
+            event.data.forEach(function(rect) {
+                // 1. Draw target matrix boundary borders
+                context.strokeStyle = '#2563eb';
+                context.lineWidth = 3;
+                context.strokeRect(rect.x, rect.y, rect.width, rect.height);
+                
+                // Draw tech square crosshairs
+                context.fillStyle = 'rgba(37, 99, 235, 0.2)';
+                context.fillRect(rect.x, rect.y, rect.width, rect.height);
+
+                // 2. Automate snapshot sequence if cooldown allows
+                const now = Date.now();
+                if (now - lastCaptureTime > CAPTURE_COOLDOWN_MS) {
+                    lastCaptureTime = now;
+                    captureIdentityLog(rect);
+                }
+            });
+        });
+
+        trackerTask = tracking.track('#viewscreen', faceTracker);
+    }
+
+    function captureIdentityLog(rect) {
+        // Build isolated hidden image canvas
+        const snapCanvas = document.createElement('canvas');
+        snapCanvas.width = video.videoWidth;
+        snapCanvas.height = video.videoHeight;
+        
+        const snapCtx = snapCanvas.getContext('2d');
+        // Snapshot the current video matrix frame
+        snapCtx.drawImage(video, 0, 0, snapCanvas.width, snapCanvas.height);
+        
+        // Convert to asset string
+        const dataUrl = snapCanvas.toDataURL('image/png');
+        playShutterSound();
+        
+        // Build dynamic structural sidebar card components
+        activeLogCount++;
+        logCount.textContent = `${activeLogCount} Logs`;
+
+        const timestamp = new Date().toLocaleTimeString();
+        
+        const card = document.createElement('div');
+        card.className = 'capture-card';
+        card.innerHTML = `
+            <img src="${dataUrl}" alt="Face Snapshot Log" />
+            <div class="capture-details">
+                <div class="capture-name">Subject #${1000 + activeLogCount}</div>
+                <div class="capture-time">Detected at ${timestamp}</div>
+            </div>
+        `;
+        
+        // Append to top of the list array stack
+        captureContainer.insertBefore(card, captureContainer.firstChild);
     }
 
     function showAlert(type, msg) {
