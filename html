@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Camera Diagnostic & Testing Tool</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-dark: #1e293b;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --success: #10b981;
+            --error: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .dashboard {
+            width: 100%;
+            max-width: 1100px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        @media (min-width: 900px) {
+            .dashboard {
+                grid-template-columns: 3fr 2fr;
+            }
+        }
+
+        header {
+            grid-column: 1 / -1;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 16px;
+        }
+
+        h1 { margin: 0 0 6px 0; font-size: 2.2rem; font-weight: 700; }
+        p { margin: 0; color: var(--text-muted); }
+
+        .card {
+            background: var(--card-dark);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            border: 1px solid #334155;
+        }
+
+        .feed-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #020617;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #475569;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: filter 0.2s ease;
+        }
+
+        /* Video Effects */
+        .filter-normal { filter: none; }
+        .filter-mono { filter: grayscale(1); }
+        .filter-invert { filter: invert(1); }
+        .filter-bright { filter: contrast(1.2) brightness(1.2); }
+
+        .action-bar {
+            margin-top: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        select, button {
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        select {
+            background: #334155;
+            color: var(--text-main);
+            flex: 1;
+            min-width: 200px;
+            border: 1px solid #475569;
+        }
+
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: var(--accent-hover); }
+        
+        .btn-success { background: var(--success); color: white; }
+        
+        .btn-secondary { background: #475569; color: white; }
+
+        .diagnostic-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .diag-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .diag-item:last-child { border: none; }
+        .label { color: var(--text-muted); font-size: 0.95rem; }
+        .value { font-family: monospace; font-size: 1.05rem; font-weight: 600; }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+        .badge-off { background: rgba(239, 68, 68, 0.15); color: var(--error); }
+        .badge-on { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+
+        .error-log {
+            grid-column: 1 / -1;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            padding: 14px;
+            color: #fca5a5;
+            display: none;
+            font-size: 0.9rem;
+        }
+
+        .gallery-section {
+            grid-column: 1 / -1;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
+            margin-top: 12px;
+        }
+
+        .gallery-grid img {
+            width: 100%;
+            border-radius: 8px;
+            border: 2px solid #334155;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <header>
+        <h1>Hardware Camera Tester</h1>
+        <p>Advanced real-time diagnostics for built-in and external cabled video devices.</p>
+    </header>
+
+    <!-- Error Messenger -->
+    <div id="errorLog" class="error-log"></div>
+
+    <!-- Live Video Panel -->
+    <div class="card">
+        <div class="feed-container">
+            <video id="preview" autoplay playsinline muted></video>
+        </div>
+        
+        <div class="action-bar">
+            <button class="btn-primary" id="startBtn">1. Grant Access & Scan</button>
+            <select id="deviceSelector">
+                <option value="">Select Video Source...</option>
+            </select>
+            <button class="btn-success" id="captureBtn">Take Snapshot</button>
+        </div>
+
+        <div class="action-bar" style="margin-top: 12px; border-top: 1px solid #334155; padding-top: 12px;">
+            <span style="color: var(--text-muted); align-self: center; font-size: 0.9rem;">Test Filters:</span>
+            <button class="btn-secondary" onclick="setFilter('filter-normal')">Normal</button>
+            <button class="btn-secondary" onclick="setFilter('filter-mono')">B&W</button>
+            <button class="btn-secondary" onclick="setFilter('filter-bright')">High Contrast</button>
+            <button class="btn-secondary" onclick="setFilter('filter-invert')">Invert</button>
+        </div>
+    </div>
+
+    <!-- Analytics Panel -->
+    <div class="card">
+        <h2 style="margin: 0 0 20px 0; font-size: 1.4rem;">Hardware Analytics</h2>
+        <div class="diagnostic-list">
+            <div class="diag-item">
+                <span class="label">Stream Engine Status</span>
+                <span id="statusBadge" class="badge badge-off">Offline</span>
+            </div>
+            <div class="diag-item">
+                <span class="label">Hardware Resolution</span>
+                <span class="value" id="resVal">-</span>
+            </div>
+            <div class="diag-item">
+                <span class="label">Aspect Ratio Config</span>
+                <span class="value" id="aspectVal">-</span>
+            </div>
+            <div class="diag-item">
+                <span class="label">Target Frame Rate</span>
+                <span class="value" id="fpsVal">-</span>
+            </div>
+            <div class="diag-item">
+                <span class="label">Connection Port Target</span>
+                <span class="value" id="modeVal">External / Cable Preferred</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Captured Frames Grid -->
+    <div class="card gallery-section">
+        <h3 style="margin: 0;">Captured Test Frames</h3>
+        <div id="snapshotGallery" class="gallery-grid"></div>
+    </div>
+</div>
+
+<script>
+    const video = document.getElementById('preview');
+    const startBtn = document.getElementById('startBtn');
+    const deviceSelector = document.getElementById('deviceSelector');
+    const captureBtn = document.getElementById('captureBtn');
+    const errorLog = document.getElementById('errorLog');
+    const gallery = document.getElementById('snapshotGallery');
+
+    const statusBadge = document.getElementById('statusBadge');
+    const resVal = document.getElementById('resVal');
+    const aspectVal = document.getElementById('aspectVal');
+    const fpsVal = document.getElementById('fpsVal');
+
+    let activeStream = null;
+
+    // Action 1: Handle Initial Activation / Permissions Setup
+    startBtn.addEventListener('click', async () => {
+        showError(""); // Clear old errors
+        
+        // Safety Check for HTTPS
+        if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+            showError("SECURITY BLOCK: Web browsers completely disable camera hardware over unencrypted connections. You MUST publish this site using HTTPS to let external cameras connect.");
+            return;
+        }
+
+        try {
+            // Force browser access prompt
+            await navigator.mediaDevices.getUserMedia({ video: true });
+            await indexDevices();
+            startBtn.textContent = "Rescan Devices";
+        } catch (err) {
+            handleHardwareError(err);
+        }
+    });
+
+    // Action 2: Find all connected hardware channels
+    async function indexDevices() {
+        const structuralDevices = await navigator.mediaDevices.enumerateDevices();
+        const videoChannels = structuralDevices.filter(d => d.kind === 'videoinput');
+
+        deviceSelector.innerHTML = '';
+        
+        if(videoChannels.length === 0) {
+            deviceSelector.innerHTML = '<option>No external or internal cameras found</option>';
+            return;
+        }
+
+        videoChannels.forEach((device, index) => {
+            const opt = document.createElement('option');
+            opt.value = device.deviceId;
+            opt.text = device.label || `Cabled Device Channel ${index + 1}`;
+            deviceSelector.appendChild(opt);
+        });
+
+        // Auto launch first picked item 
+        connectToCamera(videoChannels[0].deviceId);
+    }
+
+    // Action 3: Stream specific chosen hardware feed
+    async function connectToCamera(id) {
+        if (activeStream) {
+            activeStream.getTracks().forEach(t => t.stop());
+        }
+
+        const configuration = {
+            video: {
+                deviceId: { exact: id },
+                width: { ideal: 3840 },
+                height: { ideal: 2160 }
+            }
+        };
+
+        try {
+            activeStream = await navigator.mediaDevices.getUserMedia(configuration);
+            video.srcObject = activeStream;
+            
+            statusBadge.textContent = "Online";
+            statusBadge.className = "badge badge-on";
+            
+            video.onloadedmetadata = () => {
+                const track = activeStream.getVideoTracks()[0];
+                const dataSettings = track.getSettings();
+                
+                const w = dataSettings.width || video.videoWidth;
+                const h = dataSettings.height || video.videoHeight;
+                
+                resVal.textContent = `${w} x ${h}`;
+                
+                const calculateGcd = (x, y) => y ? calculateGcd(y, x % y) : x;
+                const shareDiv = calculateGcd(w, h);
+                aspectVal.textContent = `${w/shareDiv}:${h/shareDiv}`;
+                
+                fpsVal.textContent = dataSettings.frameRate ? `${Math.round(dataSettings.frameRate)} FPS` : "Dynamic";
+            };
+        } catch(err) {
+            handleHardwareError(err);
+        }
+    }
+
+    // UI Utilities
+    function setFilter(className) {
+        video.className = className;
+    }
+
+    function showError(msg) {
+        if(!msg) {
+            errorLog.style.display = "none";
+            return;
+        }
+        errorLog.textContent = msg;
+        errorLog.style.display = "block";
+    }
+
+    function handleHardwareError(err) {
+        console.error(err);
+        statusBadge.textContent = "Error";
+        statusBadge.className = "badge badge-off";
+        
+        if (err.name === 'NotAllowedError') {
+            showError("Access Blocked: Please click the camera icon in your URL address bar and change permissions to 'Allow'.");
+        } else if (err.name === 'OverconstrainedError') {
+            showError("Hardware Error: The camera doesn't support the requested high resolution settings.");
+        } else {
+            showError(`System Issue: ${err.message || 'Could not map hardware stream to layout.'}`);
+        }
+    }
+
+    // Capture Frame Feature
+    captureBtn.addEventListener('click', () => {
+        if (!activeStream) return;
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        
+        // Maintain active CSS filters in the captured snapshot image file
+        ctx.filter = getComputedStyle(video).filter;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        const photo = document.createElement('img');
+        photo.src = canvas.toDataURL('image/png');
+        gallery.insertBefore(photo, gallery.firstChild);
+    });
+
+    deviceSelector.addEventListener('change', (e) => {
+        if(e.target.value) connectToCamera(e.target.value);
+    });
+</script>
+</body>
+</html>
