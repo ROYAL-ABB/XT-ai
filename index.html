@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xt-ai // Real-Time Motion Tracker & DVR</title>
+    <title>xt-ai // Precision Motion Object DVR</title>
     <style>
         :root {
             --bg: #090d16;
@@ -94,6 +94,48 @@
             height: 100%;
             pointer-events: none;
             z-index: 10;
+        }
+
+        /* Live Recording Indicator HUD element */
+        .rec-indicator {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(9, 13, 22, 0.85);
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: 1px solid var(--error);
+            display: none;
+            align-items: center;
+            gap: 8px;
+            z-index: 20;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        .rec-indicator.active {
+            display: flex;
+            animation: pulseBorder 2s infinite alternate;
+        }
+
+        .rec-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--error);
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+        @keyframes pulseBorder {
+            0% { border-color: rgba(239, 68, 68, 0.4); }
+            100% { border-color: rgba(239, 68, 68, 1); }
         }
 
         .controls-row {
@@ -222,14 +264,20 @@
 
 <div class="app-container">
     <header>
-        <h1>xt-ai // Target Motion Tracker & DVR</h1>
-        <p>Real-time pixel spatial bounding squares and direct pipeline stream recording.</p>
+        <h1>xt-ai // Variable Object Tracker & DVR</h1>
+        <p>Responsive multi-scale silhouette tracking with an automated video capture overlay.</p>
     </header>
 
     <div id="statusAlert" class="status-msg"></div>
 
     <div class="panel workspace-left">
         <div class="viewer-box">
+            <!-- Flashing Recording Signal Sign -->
+            <div id="recSign" class="rec-indicator">
+                <div class="rec-dot"></div>
+                <span>LIVE RECORDING</span>
+            </div>
+            
             <video id="viewscreen" autoplay playsinline muted></video>
             <canvas id="motionOverlay"></canvas>
         </div>
@@ -240,7 +288,7 @@
             
             <div class="sensitivity-panel">
                 <label for="thresholdSlider">Sensitivity</label>
-                <input type="range" id="thresholdSlider" min="10" max="60" value="25" style="cursor:pointer; accent-color:var(--accent);">
+                <input type="range" id="thresholdSlider" min="10" max="60" value="22" style="cursor:pointer; accent-color:var(--accent);">
             </div>
         </div>
     </div>
@@ -266,6 +314,7 @@
     const captureContainer = document.getElementById('captureContainer');
     const logCount = document.getElementById('logCount');
     const thresholdSlider = document.getElementById('thresholdSlider');
+    const recSign = document.getElementById('recSign');
 
     let localStream = null;
     let animationFrameId = null;
@@ -279,7 +328,7 @@
     let isRecorderStopping = false;
     let lastMotionTime = 0;
     
-    const RECORDING_BUFFER_MS = 4000; // Keep recording for 4 seconds after all motion stops
+    const RECORDING_BUFFER_MS = 4000; // Recording extension grace period
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playChime(type) {
@@ -289,8 +338,8 @@
         gain.connect(audioCtx.destination);
         
         if (type === 'start') {
-            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
-            osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.08); // E5
+            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); 
+            osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.08); 
             gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
             osc.start(); osc.stop(audioCtx.currentTime + 0.2);
         } else {
@@ -381,7 +430,7 @@
     function startMotionDetectionPipeline() {
         if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
-        // Grid-based processing dimensions
+        // Frame process resolutions for tracking stability
         const processWidth = 160;
         const processHeight = 120;
         const processCanvas = document.createElement('canvas');
@@ -402,12 +451,12 @@
 
             let motionDetected = false;
             
-            // Spatial tracking box variables
+            // Extreme bounds to construct our precision crop target square
             let minX = processWidth, maxX = 0;
             let minY = processHeight, maxY = 0;
+            let changedCount = 0;
 
             if (prevFrameData) {
-                let changedPixelsCount = 0;
                 const threshold = parseInt(thresholdSlider.value);
 
                 for (let y = 0; y < processHeight; y++) {
@@ -418,10 +467,10 @@
                         const gDiff = Math.abs(currentFrameData.data[i+1] - prevFrameData.data[i+1]);
                         const bDiff = Math.abs(currentFrameData.data[i+2] - prevFrameData.data[i+2]);
                         
+                        // Detect precise variance index
                         if ((rDiff + gDiff + bDiff) / 3 > threshold) {
-                            changedPixelsCount++;
+                            changedCount++;
                             
-                            // Map out the boundary extremes of the moving pixels
                             if (x < minX) minX = x;
                             if (x > maxX) maxX = x;
                             if (y < minY) minY = y;
@@ -430,53 +479,48 @@
                     }
                 }
 
-                // Trigger threshold: minimal movement cluster size
-                if (changedPixelsCount > (processWidth * processHeight) * 0.015) {
+                // Low cluster trigger allowance to detect small fast moving items
+                if (changedCount > 5) { 
                     motionDetected = true;
                     lastMotionTime = Date.now();
                 }
             }
 
-            // Draw dynamic tracking target square if motion exists
-            if (motionDetected) {
-                // Scale coordinates up from downsampled calculation window to real video size
+            // Draw dynamic custom size container around the exact shape of movement
+            if (motionDetected && minX <= maxX && minY <= maxY) {
                 const scaleX = overlay.width / processWidth;
                 const scaleY = overlay.height / processHeight;
 
-                const boxX = minX * scaleX;
-                const boxY = minY * scaleY;
-                const boxWidth = (maxX - minX) * scaleX;
-                const boxHeight = (maxY - minY) * scaleY;
+                // Margins added around vectors to ensure clear framing
+                const padding = 12;
+                const boxX = Math.max(0, (minX * scaleX) - padding);
+                const boxY = Math.max(0, (minY * scaleY) - padding);
+                const boxWidth = Math.min(overlay.width - boxX, ((maxX - minX) * scaleX) + (padding * 2));
+                const boxHeight = Math.min(overlay.height - boxY, ((maxY - minY) * scaleY) + (padding * 2));
 
-                // Draw bright neon bounding tracker rectangle around target
+                // UI rendering parameters for tracking box
                 context.strokeStyle = 'var(--success)';
-                context.lineWidth = 4;
+                context.lineWidth = 3;
+                context.setLineDash([6, 4]); // Clean data layout aesthetic
                 context.strokeRect(boxX, boxY, boxWidth, boxHeight);
+                context.setLineDash([]); // Reset line formatting
 
-                // Quick small text target tag above tracking square
+                // Small crosshair indicators in corners of tracking frame
                 context.fillStyle = 'var(--success)';
-                context.font = 'bold 12px monospace';
-                context.fillText('TARGET ACTIVE', boxX, boxY - 6);
+                context.font = 'bold 11px monospace';
+                context.fillText(`OBJ: ${Math.round(boxWidth)}x${Math.round(boxHeight)}`, boxX + 6, boxY + 16);
             }
 
-            // Recording state logic engine
+            // Stateful Recording Controller Architecture 
             const now = Date.now();
             if (motionDetected) {
                 if (!isRecording && !isRecorderStopping) {
                     startRecordingSequence();
                 }
             } else {
-                // If recording is running but motion dropped out longer than the cooldown buffer window
                 if (isRecording && (now - lastMotionTime > RECORDING_BUFFER_MS)) {
                     stopRecordingSequence();
                 }
-            }
-
-            // Visual Status indicator banner inside monitoring screen
-            if (isRecording) {
-                context.fillStyle = 'var(--error)';
-                context.font = 'bold 16px sans-serif';
-                context.fillText('• REC ACTIVE', 20, 35);
             }
 
             prevFrameData = currentFrameData;
@@ -490,6 +534,9 @@
         isRecording = true;
         recordedChunks = [];
         playChime('start');
+        
+        // Show recording signal sign UI component
+        recSign.classList.add('active');
 
         let options = { mimeType: 'video/webm;codecs=vp9,opus' };
         if (!MediaRecorder.isTypeSupported(options.mimeType)) {
@@ -515,9 +562,10 @@
             compileVideoFile();
             isRecording = false;
             isRecorderStopping = false; 
+            recSign.classList.remove('active'); // Hide recording badge on finish
         };
 
-        mediaRecorder.start(1000); // Collect data chunks explicitly every 1 second
+        mediaRecorder.start(1000); 
     }
 
     function stopRecordingSequence() {
