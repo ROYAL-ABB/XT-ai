@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>APEX.MATRIX // Ultimate Precision Suite</title>
+    <title>APEX.MATRIX // Ultimate Precision & Capture Suite</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <style>
@@ -32,16 +32,16 @@
 
         .app-container {
             width: 100%;
-            max-width: 1600px;
+            max-width: 1800px;
             display: grid;
             grid-template-columns: 1fr;
             gap: 20px;
             height: 100%;
         }
 
-        @media (min-width: 992px) {
+        @media (min-width: 1200px) {
             .app-container { 
-                grid-template-columns: 3fr 1fr;
+                grid-template-columns: 2fr 1fr;
                 grid-template-rows: auto 1fr;
             }
         }
@@ -62,6 +62,7 @@
             border: 1px solid var(--border);
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
         .workspace-left {
@@ -171,29 +172,47 @@
         button:disabled { opacity: 0.3; cursor: not-allowed; }
         button:hover:not(:disabled) { filter: brightness(1.1); }
 
-        .sidebar-right {
-            max-height: 80vh;
+        /* DOUBLE ARCHIVE CONTAINER DESIGN */
+        .archive-split-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            height: 100%;
+            min-height: 0; /* Important for flex/grid inner scrolling */
+        }
+
+        .archive-column {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
         }
 
         .sidebar-title {
-            margin: 0 0 15px 0;
-            font-size: 0.9rem;
+            margin: 0 0 12px 0;
+            font-size: 0.85rem;
             font-weight: 700;
             letter-spacing: 1px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             color: #94a3b8;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #1e293b;
         }
 
         .counter-badge {
             background: #0f172a;
             color: var(--success);
-            font-size: 0.75rem;
-            padding: 4px 10px;
+            font-size: 0.7rem;
+            padding: 2px 8px;
             border-radius: 4px;
             border: 1px solid #24334d;
             font-family: monospace;
+        }
+        
+        .counter-badge.video-badge {
+            color: var(--accent);
         }
 
         .capture-list {
@@ -205,12 +224,12 @@
             padding-right: 4px;
         }
 
-        .capture-card {
+        .capture-card, .video-card {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             background: #070c17;
-            padding: 12px;
+            padding: 10px;
             border-radius: 6px;
             border: 1px solid #1e293b;
         }
@@ -223,7 +242,14 @@
             cursor: zoom-in;
             transition: transform 0.2s;
         }
-        .capture-card img:hover { transform: scale(1.02); }
+        .capture-card img:hover { transform: scale(1.01); }
+
+        .video-card video {
+            width: 100%;
+            border-radius: 4px;
+            border: 1px solid #24334d;
+            background: #000;
+        }
 
         .meta-line-main {
             display: flex;
@@ -232,23 +258,37 @@
             font-family: monospace;
         }
 
-        .capture-name { font-size: 0.8rem; font-weight: bold; color: var(--success); }
-        .capture-time { font-size: 0.75rem; color: #64748b; }
+        .capture-name { font-size: 0.75rem; font-weight: bold; color: var(--success); }
+        .video-name { font-size: 0.75rem; font-weight: bold; color: var(--accent); }
+        .capture-time { font-size: 0.7rem; color: #64748b; }
         
         .intelligence-box {
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             background: #0f172a;
-            padding: 10px;
+            padding: 8px;
             border-radius: 4px;
             color: #cbd5e1;
-            line-height: 1.5;
+            line-height: 1.4;
             border-left: 3px solid var(--success);
         }
+        .intelligence-box.video-intel { border-left-color: var(--accent); }
+        .intelligence-box span { color: #fff; font-weight: 600; }
 
-        .intelligence-box span {
-            color: #fff;
-            font-weight: 600;
+        .btn-download-video {
+            display: inline-block;
+            text-align: center;
+            text-decoration: none;
+            background: #1e293b;
+            color: #e2e8f0;
+            font-size: 0.7rem;
+            font-weight: bold;
+            font-family: monospace;
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px solid #334155;
+            transition: background 0.2s;
         }
+        .btn-download-video:hover { background: #2d3748; color: var(--success); }
 
         /* MODAL ELEMENTS */
         .modal-overlay {
@@ -304,7 +344,7 @@
 <div class="app-container">
     <header>
         <h1>APEX // SPATIAL PRECISION SUITE</h1>
-        <p>Isolated component targeting module. Dynamic frame buffer logic maps targets explicitly over real-time motion deltas.</p>
+        <p>Isolated component targeting module. Parallel processing pipeline encodes video telemetry archives automatically on session cut.</p>
     </header>
 
     <div class="panel workspace-left">
@@ -328,12 +368,29 @@
         </div>
     </div>
 
+    <!-- DOUBLE ARTIFACT ARCHIVE DOCK -->
     <div class="panel sidebar-right">
-        <h3 class="sidebar-title">
-            INTEL ARCHIVE
-            <span class="counter-badge" id="logCount">0 CAPTURES</span>
-        </h3>
-        <div class="capture-list" id="captureContainer"></div>
+        <div class="archive-split-grid">
+            
+            <!-- COLUMN 1: PICS ARCHIVE (SNAPSHOTS) -->
+            <div class="archive-column">
+                <h3 class="sidebar-title">
+                    TELEMETRY LOGS
+                    <span class="counter-badge" id="logCount">0 PICS</span>
+                </h3>
+                <div class="capture-list" id="captureContainer"></div>
+            </div>
+
+            <!-- COLUMN 2: RECORD ARCHIVE (VIDEOS) -->
+            <div class="archive-column">
+                <h3 class="sidebar-title">
+                    VIDEO VAULT
+                    <span class="counter-badge video-badge" id="videoCount">0 CLIPS</span>
+                </h3>
+                <div class="capture-list" id="videoArchiveContainer"></div>
+            </div>
+
+        </div>
     </div>
 </div>
 
@@ -356,7 +413,9 @@
     const toggleShutterBtn = document.getElementById('toggleShutterBtn');
     const selector = document.getElementById('selector');
     const captureContainer = document.getElementById('captureContainer');
+    const videoArchiveContainer = document.getElementById('videoArchiveContainer');
     const logCount = document.getElementById('logCount');
+    const videoCount = document.getElementById('videoCount');
     const statusMessage = document.getElementById('statusMessage');
     
     const recIndicator = document.getElementById('recIndicator');
@@ -371,12 +430,18 @@
     let animationFrameId = null;
     let prevFrameData = null;
     let activeLogCount = 0;
+    let activeVideoCount = 0;
     let netModel = null;
     
+    // Hardware Recording Engine Core
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let videoStartTime = null;
+
     // Precise targeting coordinates
     let currentX = 0, currentY = 0, currentW = 0, currentH = 0;
     let targetX = 0, targetY = 0, targetW = 0, targetH = 0;
-    const lerpSpeed = 0.40; // ultra fast reactive bracket matching
+    const lerpSpeed = 0.40; 
 
     // Operational control states
     let isRecording = false; 
@@ -407,7 +472,7 @@
             toggleRecBtn.disabled = false;
             toggleShutterBtn.disabled = false;
             
-            // Turn recording loop state on by default out of the gate
+            // Turn recording loops on by default out of the gate
             setRecordingState(true);
             setShutterState(true);
         } catch (e) {
@@ -415,12 +480,10 @@
         }
     });
 
-    // Recording Toggle Button
     toggleRecBtn.addEventListener('click', () => {
         setRecordingState(!isRecording);
     });
 
-    // Shutter Trigger Toggle Button
     toggleShutterBtn.addEventListener('click', () => {
         setShutterState(!isShutterArmed);
     });
@@ -432,6 +495,7 @@
             toggleRecBtn.classList.add("active-rec");
             recIndicator.classList.add("rec-active");
             updateStatusText();
+            startHardwareRecording();
         } else {
             toggleRecBtn.textContent = "START RECORDING";
             toggleRecBtn.classList.remove("active-rec");
@@ -439,6 +503,7 @@
             targetW = 0; targetH = 0;
             context.clearRect(0, 0, overlay.width, overlay.height);
             updateStatusText();
+            stopHardwareRecording();
         }
     }
 
@@ -492,7 +557,73 @@
             overlay.width = video.videoWidth;
             overlay.height = video.videoHeight;
             executeHighPrecisionPipeline();
+            
+            // If user switches cameras while recording is checked, cycle encoder
+            if (isRecording) {
+                stopHardwareRecording();
+                startHardwareRecording();
+            }
         };
+    }
+
+    // MediaRecorder Initializer Hook
+    function startHardwareRecording() {
+        if (!localStream) return;
+        recordedChunks = [];
+        videoStartTime = new Date().toLocaleTimeString();
+
+        // Check format encoding capabilities options
+        let options = { mimeType: 'video/webm;codecs=vp8' };
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+            options = { mimeType: 'video/mp4' };
+        }
+
+        try {
+            mediaRecorder = new MediaRecorder(localStream, options);
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+            };
+            mediaRecorder.onstop = processAndArchiveVideo;
+            mediaRecorder.start(200); // chunk buffer slicing sequence rate
+        } catch (err) {
+            console.error("Failed to establish streaming hardware context wrapper:", err);
+        }
+    }
+
+    function stopHardwareRecording() {
+        if (mediaRecorder && mediaRecorder.state !== "inactive") {
+            mediaRecorder.stop();
+        }
+    }
+
+    // Encodes raw video data array into local asset list structures
+    function processAndArchiveVideo() {
+        if (recordedChunks.length === 0) return;
+        
+        activeVideoCount++;
+        videoCount.textContent = `${activeVideoCount} CLIPS`;
+
+        const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType });
+        const videoURL = URL.createObjectURL(blob);
+        const fileExt = mediaRecorder.mimeType.includes('mp4') ? 'mp4' : 'webm';
+        
+        const videoCard = document.createElement('div');
+        videoCard.className = 'video-card';
+        videoCard.innerHTML = `
+            <video src="${videoURL}" controls playsinline></video>
+            <div class="meta-line-main">
+                <div class="video-name">STREAM_CLIP_${400 + activeVideoCount}</div>
+                <div class="capture-time">[${videoStartTime}]</div>
+            </div>
+            <div class="intelligence-box video-intel">
+                DURATION EXTENT: <span>SERIALIZED BUFFER</span>
+            </div>
+            <a href="${videoURL}" download="STREAM_CLIP_${400 + activeVideoCount}.${fileExt}" class="btn-download-video">
+                DOWNLOAD VIDEO CAPTURE
+            </a>
+        `;
+        
+        videoArchiveContainer.insertBefore(videoCard, videoArchiveContainer.firstChild);
     }
 
     function executeHighPrecisionPipeline() {
@@ -505,7 +636,6 @@
         lowResCanvas.height = lowResH;
         const lowResCtx = lowResCanvas.getContext('2d');
 
-        // Continuous lightweight object tracking matrix thread
         setInterval(async () => {
             if (isRecording && !video.paused && video.readyState >= 2 && netModel && isMoving) {
                 const results = await netModel.detect(video);
@@ -524,7 +654,6 @@
             lowResCtx.drawImage(video, 0, 0, lowResW, lowResH);
             const currentFrame = lowResCtx.getImageData(0, 0, lowResW, lowResH);
 
-            // Halt processing calculation if system recording is stopped
             if (!isRecording) {
                 prevFrameData = currentFrame;
                 animationFrameId = requestAnimationFrame(track);
@@ -542,12 +671,10 @@
                 for (let y = 0; y < lowResH; y++) {
                     for (let x = 0; x < lowResW; x++) {
                         const idx = (y * lowResW + x) * 4;
-                        
                         const dR = Math.abs(currentFrame.data[idx] - prevFrameData.data[idx]);
                         const dG = Math.abs(currentFrame.data[idx+1] - prevFrameData.data[idx+1]);
                         const dB = Math.abs(currentFrame.data[idx+2] - prevFrameData.data[idx+2]);
                         
-                        // Heightened sensitivity configuration to parse fine elements explicitly
                         if ((dR + dG + dB) / 3 > 26) { 
                             motionDensity++;
                             if (x < rawMinX) rawMinX = x;
@@ -558,7 +685,6 @@
                     }
                 }
 
-                // Strict macro density verification parameter filter
                 if (motionDensity > 8) { 
                     flowDetected = true;
                 }
@@ -568,7 +694,6 @@
                 const mapX = overlay.width / lowResW;
                 const mapY = overlay.height / lowResH;
                 
-                // Tight, zero-drift alignment calculations directly bounding moving pixels
                 targetX = rawMinX * mapX;
                 targetY = rawMinY * mapY;
                 targetW = (rawMaxX - rawMinX) * mapX;
@@ -576,7 +701,6 @@
 
                 isMoving = true;
 
-                // Fire capture engine only if the shutter module is fully active
                 if (isShutterArmed) {
                     const now = performance.now();
                     if (now - lastCaptureTime > minCaptureInterval) {
@@ -586,17 +710,15 @@
                 }
             } else {
                 isMoving = false;
-                targetW = 0; targetH = 0; // Collapses HUD brackets instantly
+                targetW = 0; targetH = 0; 
                 primaryLabel = "IDENTIFYING TARGET...";
             }
 
-            // Target crosshair vector movement transitions
             currentX += (targetX - currentX) * lerpSpeed;
             currentY += (targetY - currentY) * lerpSpeed;
             currentW += (targetW - currentW) * lerpSpeed;
             currentH += (targetH - currentH) * lerpSpeed;
 
-            // Reticle rendering overlay logic
             if (currentW > 4 && isRecording) {
                 context.strokeStyle = 'var(--success)';
                 context.lineWidth = 2;
@@ -621,7 +743,7 @@
 
     function triggerInstantCapture(labelText) {
         activeLogCount++;
-        logCount.textContent = `${activeLogCount} CAPTURES`;
+        logCount.textContent = `${activeLogCount} PICS`;
 
         const snappit = document.createElement('canvas');
         snappit.width = video.videoWidth;
