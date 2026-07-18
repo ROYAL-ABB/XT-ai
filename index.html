@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xt-ai | Camera Diagnostic Tool</title>
+    <title>xt-ai // Pure Hardware Cam Tester</title>
     <style>
         :root {
-            --bg: #0b0f19;
-            --panel: #161f30;
+            --bg: #090d16;
+            --panel: #131a26;
             --accent: #2563eb;
-            --accent-hover: #1d4ed8;
             --success: #059669;
             --error: #dc2626;
+            --warn: #d97706;
             --text: #f1f5f9;
             --text-muted: #64748b;
         }
@@ -45,14 +45,13 @@
             border-bottom: 1px solid #1e293b;
         }
 
-        h1 { margin: 0 0 5px 0; font-size: 1.8rem; letter-spacing: 0.5px; }
-        header p { margin: 0; color: var(--text-muted); font-size: 0.95rem; }
+        h1 { margin: 0 0 5px 0; font-size: 1.8rem; }
+        header p { margin: 0; color: var(--text-muted); }
 
         .panel {
             background: var(--panel);
             border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             border: 1px solid #1e293b;
         }
 
@@ -99,7 +98,6 @@
         }
 
         .btn-blue { background: var(--accent); color: white; }
-        .btn-blue:hover { background: var(--accent-hover); }
         .btn-green { background: var(--success); color: white; }
 
         .data-list {
@@ -115,27 +113,15 @@
             border-bottom: 1px solid #1e293b;
         }
 
-        .data-row:last-child { border: none; }
-        .lbl { color: var(--text-muted); }
-        .val { font-family: monospace; font-weight: bold; }
-
-        .log-box {
+        .status-msg {
             grid-column: 1 / -1;
-            background: rgba(220, 38, 38, 0.1);
-            border: 1px solid rgba(220, 38, 38, 0.3);
-            border-radius: 6px;
             padding: 12px;
-            color: #fca5a5;
-            display: none;
-            font-size: 0.85rem;
-        }
-
-        #gallery img {
-            width: 100%;
             border-radius: 6px;
-            margin-top: 10px;
-            border: 1px solid #334155;
+            font-size: 0.9rem;
+            display: none;
         }
+        .msg-warn { background: rgba(217, 119, 6, 0.15); border: 1px solid var(--warn); color: #fde68a; }
+        .msg-error { background: rgba(220, 38, 38, 0.15); border: 1px solid var(--error); color: #fca5a5; }
     </style>
 </head>
 <body>
@@ -146,30 +132,27 @@
         <p>Direct hardware testing utility pipeline.</p>
     </header>
 
-    <div id="logBox" class="log-box"></div>
+    <div id="statusAlert" class="status-msg"></div>
 
-    <!-- Screen Render Feed -->
     <div class="panel">
         <div class="viewer-box">
             <video id="viewscreen" autoplay playsinline muted></video>
         </div>
         <div class="controls-row">
             <button class="btn-blue" id="initBtn">Scan Channels</button>
-            <select id="selector"><option value="">Awaiting Device Initialization...</option></select>
+            <select id="selector"><option value="">Awaiting Device Scan...</option></select>
             <button class="btn-green" id="snapBtn">Capture Frame</button>
         </div>
     </div>
 
-    <!-- Performance Telemetry -->
     <div class="panel">
         <h3 style="margin-top: 0; border-bottom: 1px solid #1e293b; padding-bottom: 8px;">Telemetry Logs</h3>
         <div class="data-list">
-            <div class="data-row"><span class="lbl">Engine Connection</span><span id="connState" style="color:var(--error)">Offline</span></div>
-            <div class="data-row"><span class="lbl">Active Resolution</span><span id="resOut" class="val">-</span></div>
-            <div class="data-row"><span class="lbl">Aspect Ratio Matrix</span><span id="aspectOut" class="val">-</span></div>
-            <div class="data-row"><span class="lbl">Frame Rate Registry</span><span id="fpsOut" class="val">-</span></div>
+            <div class="data-row"><span class="lbl">Link Engine</span><span id="connState" style="color:var(--error)">Offline</span></div>
+            <div class="data-row"><span class="lbl">Resolution</span><span id="resOut">-</span></div>
+            <div class="data-row"><span class="lbl">Aspect Ratio</span><span id="aspectOut">-</span></div>
+            <div class="data-row"><span class="lbl">Device Mode</span><span id="modeOut">Standard Protocol</span></div>
         </div>
-        <div id="gallery"></div>
     </div>
 </div>
 
@@ -177,124 +160,115 @@
     const video = document.getElementById('viewscreen');
     const initBtn = document.getElementById('initBtn');
     const selector = document.getElementById('selector');
-    const snapBtn = document.getElementById('snapBtn');
-    const logBox = document.getElementById('logBox');
+    const statusAlert = document.getElementById('statusAlert');
     
     const connState = document.getElementById('connState');
     const resOut = document.getElementById('resOut');
     const aspectOut = document.getElementById('aspectOut');
-    const fpsOut = document.getElementById('fpsOut');
+    const modeOut = document.getElementById('modeOut');
 
     let localStream = null;
 
     initBtn.addEventListener('click', async () => {
-        printError("");
+        showAlert("", "");
         try {
-            // Absolute bare minimum native access request. No filters, no options.
-            // This bypasses the browser's target-resolution safety checks entirely.
-            const rawAccess = await navigator.mediaDevices.getUserMedia({ video: true });
-            
-            // Instantly shutdown this temp sample channel so it doesn't lock up hardware
-            rawAccess.getTracks().forEach(t => t.stop());
-            
+            // Step 1: Request bare minimum initialization permission
+            const check = await navigator.mediaDevices.getUserMedia({ video: true });
+            check.getTracks().forEach(t => t.stop()); // clear test track immediately
             await findVideoChannels();
-            initBtn.textContent = "Refresh Channels";
         } catch (e) {
-            processCrash(e);
+            showAlert("error", `Permission/Access Blocked: ${e.message}`);
         }
     });
 
     async function findVideoChannels() {
-        const hardwareRegistry = await navigator.mediaDevices.enumerateDevices();
-        const cams = hardwareRegistry.filter(d => d.kind === 'videoinput');
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(d => d.kind === 'videoinput');
 
         selector.innerHTML = '';
-        if (cams.length === 0) {
-            selector.innerHTML = '<option>Zero camera hardware discovered</option>';
+        if (videoDevices.length === 0) {
+            selector.innerHTML = '<option>No hardware discovered</option>';
             return;
         }
 
-        cams.forEach((cam, index) => {
+        videoDevices.forEach((cam, index) => {
             const node = document.createElement('option');
             node.value = cam.deviceId;
-            node.text = cam.label || `Camera Source Line ${index + 1}`;
+            node.text = cam.label || `Video Channel ${index + 1}`;
             selector.appendChild(node);
         });
 
-        // Autoplay the top index item using completely open rules
-        fireStream(cams[0].deviceId);
+        // Auto launch first picked item using new protective matrix
+        executeRescueStream(videoDevices[0].deviceId);
     }
 
-    async function fireStream(hardwareId) {
+    async function executeRescueStream(hardwareId) {
         if (localStream) {
             localStream.getTracks().forEach(t => t.stop());
         }
 
-        // BARE METAL RULESET: We request nothing but the raw device channel ID.
-        // The browser will automatically take whatever configuration the cable provides natively.
-        const bareConstraints = {
-            video: {
-                deviceId: hardwareId ? { exact: hardwareId } : undefined
-            }
-        };
-
+        // Configuration Tier 1: Pure basic request
+        let options = { video: { deviceId: hardwareId ? { exact: hardwareId } : undefined } };
+        
         try {
-            localStream = await navigator.mediaDevices.getUserMedia(bareConstraints);
-            video.srcObject = localStream;
+            await startVideoFeed(options);
+            modeOut.textContent = "Native Hardware Mode";
+        } catch (firstError) {
+            console.warn("Standard stream failed. Initiating Rescue Fallback Sequence...", firstError);
             
-            connState.textContent = "Connected";
-            connState.style.color = "var(--success)";
+            // Configuration Tier 2: The Rescue Matrix
+            // Strips down resolutions completely so weak USB port bandwidth or minor software locks are bypassed.
+            showAlert("warn", "System warning: Camera responded with a lock error. Attempting to bypass hardware restrictions...");
             
-            video.onloadedmetadata = () => {
-                const liveTrack = localStream.getVideoTracks()[0];
-                const liveData = liveTrack.getSettings();
-                
-                // Read whatever pixel parameters the device inherently booted into
-                const w = liveData.width || video.videoWidth;
-                const h = liveData.height || video.videoHeight;
-                
-                resOut.textContent = `${w} x ${h}`;
-                
-                const processGcd = (a, b) => b ? processGcd(b, a % b) : a;
-                const div = processGcd(w, h);
-                aspectOut.textContent = `${w/div}:${h/div}`;
-                
-                fpsOut.textContent = liveData.frameRate ? `${Math.round(liveData.frameRate)} Hz` : "Auto-Controlled";
+            let rescueOptions = {
+                video: {
+                    deviceId: hardwareId ? { exact: hardwareId } : undefined,
+                    width: { ideal: 640 }, 
+                    height: { ideal: 480 },
+                    frameRate: { max: 15 } // Lower data rate significantly to force connection
+                }
             };
-        } catch (e) {
-            processCrash(e);
+
+            try {
+                await startVideoFeed(rescueOptions);
+                modeOut.textContent = "Safe-Mode Rescue Active";
+                showAlert("", ""); // Clear the warning if safe mode succeeded
+            } catch (secondError) {
+                console.error("Rescue configuration matrix exhausted.", secondError);
+                connState.textContent = "Lock State";
+                connState.style.color = "var(--error)";
+                showAlert("error", "Hardware Critical: Your computer reports the camera is physically busy in another task. Please disconnect/reconnect the camera cable or restart your system.");
+            }
         }
     }
 
-    function printError(msg) {
-        if(!msg) { logBox.style.display = "none"; return; }
-        logBox.textContent = msg;
-        logBox.style.display = "block";
-    }
-
-    function processCrash(e) {
-        console.error(e);
-        connState.textContent = "Fault";
-        connState.style.color = "var(--error)";
-        printError(`System Handshake Failed: ${e.name} - ${e.message}. The browser rejected standard rendering parameters.`);
-    }
-
-    snapBtn.addEventListener('click', () => {
-        if (!localStream) return;
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    async function startVideoFeed(constraints) {
+        localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = localStream;
         
-        const gallery = document.getElementById('gallery');
-        gallery.innerHTML = ""; // Single frame buffer
-        const view = document.createElement('img');
-        view.src = canvas.toDataURL('image/png');
-        gallery.appendChild(view);
-    });
+        connState.textContent = "Online";
+        connState.style.color = "var(--success)";
+        
+        video.onloadedmetadata = () => {
+            const w = video.videoWidth;
+            const h = video.videoHeight;
+            resOut.textContent = `${w} x ${h}`;
+            
+            const gcd = (a, b) => b ? gcd(b, a % b) : a;
+            const div = gcd(w, h);
+            aspectOut.textContent = `${w/div}:${h/div}`;
+        };
+    }
+
+    function showAlert(type, msg) {
+        if(!msg) { statusAlert.style.display = "none"; return; }
+        statusAlert.className = `status-msg msg-${type}`;
+        statusAlert.textContent = msg;
+        statusAlert.style.display = "block";
+    }
 
     selector.addEventListener('change', (e) => {
-        if (e.target.value) fireStream(e.target.value);
+        if (e.target.value) executeRescueStream(e.target.value);
     });
 </script>
 </body>
