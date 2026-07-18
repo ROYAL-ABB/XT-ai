@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xt-ai // Live Motion DVR Suite</title>
+    <title>xt-ai // Real-Time Motion Tracker & DVR</title>
     <style>
         :root {
             --bg: #090d16;
             --panel: #131a26;
             --accent: #2563eb;
-            --success: #059669;
-            --error: #dc2626;
-            --warn: #d97706;
+            --success: #10b981;
+            --error: #ef4444;
+            --warn: #f59e0b;
             --text: #f1f5f9;
             --text-muted: #64748b;
             --border: #1e293b;
@@ -222,8 +222,8 @@
 
 <div class="app-container">
     <header>
-        <h1>xt-ai // Motion-Activated DVR Workstation</h1>
-        <p>Autonomous recording interface triggered by visual environment changes.</p>
+        <h1>xt-ai // Target Motion Tracker & DVR</h1>
+        <p>Real-time pixel spatial bounding squares and direct pipeline stream recording.</p>
     </header>
 
     <div id="statusAlert" class="status-msg"></div>
@@ -239,8 +239,8 @@
             <button class="btn-warn" id="bypassBtn" style="display:none;">Force Default Cam</button>
             
             <div class="sensitivity-panel">
-                <label for="thresholdSlider">Sensitivity Threshold</label>
-                <input type="range" id="thresholdSlider" min="10" max="60" value="30" style="cursor:pointer; accent-color:var(--accent);">
+                <label for="thresholdSlider">Sensitivity</label>
+                <input type="range" id="thresholdSlider" min="10" max="60" value="25" style="cursor:pointer; accent-color:var(--accent);">
             </div>
         </div>
     </div>
@@ -270,18 +270,17 @@
     let localStream = null;
     let animationFrameId = null;
     
-    // CV Differential & Recording Control Variables
     let prevFrameData = null;
     let activeLogCount = 0;
     
     let mediaRecorder = null;
     let recordedChunks = [];
     let isRecording = false;
-    let motionTimeout = null;
+    let isRecorderStopping = false;
+    let lastMotionTime = 0;
     
-    const RECORDING_BUFFER_MS = 5000; // Keeps recording for 5 seconds after motion drops off
+    const RECORDING_BUFFER_MS = 4000; // Keep recording for 4 seconds after all motion stops
 
-    // Synthesized Warning Chime Tone Architecture
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playChime(type) {
         const osc = audioCtx.createOscillator();
@@ -290,15 +289,15 @@
         gain.connect(audioCtx.destination);
         
         if (type === 'start') {
-            osc.frequency.setValueAtTime(440, audioCtx.currentTime);
-            osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.1);
-            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.25);
-        } else {
-            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-            osc.frequency.setValueAtTime(440, audioCtx.currentTime + 0.1);
+            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+            osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.08); // E5
             gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+        } else {
+            osc.frequency.setValueAtTime(659.25, audioCtx.currentTime);
+            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime + 0.08);
+            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.2);
         }
     }
 
@@ -321,7 +320,7 @@
             localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             bindStreamToUI(localStream);
         } catch (e) {
-            showAlert("error", `Bypass failed. System hardware layer entirely blocked.`);
+            showAlert("error", `Bypass failed. Hardware layer entirely blocked.`);
         }
     });
 
@@ -379,12 +378,12 @@
         };
     }
 
-    // Core Processing Loop
     function startMotionDetectionPipeline() {
         if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
-        const processWidth = 200;
-        const processHeight = 150;
+        // Grid-based processing dimensions
+        const processWidth = 160;
+        const processHeight = 120;
         const processCanvas = document.createElement('canvas');
         processCanvas.width = processWidth;
         processCanvas.height = processHeight;
@@ -402,42 +401,82 @@
             context.clearRect(0, 0, overlay.width, overlay.height);
 
             let motionDetected = false;
+            
+            // Spatial tracking box variables
+            let minX = processWidth, maxX = 0;
+            let minY = processHeight, maxY = 0;
 
             if (prevFrameData) {
                 let changedPixelsCount = 0;
                 const threshold = parseInt(thresholdSlider.value);
 
-                for (let i = 0; i < currentFrameData.data.length; i += 4) {
-                    const rDiff = Math.abs(currentFrameData.data[i] - prevFrameData.data[i]);
-                    const gDiff = Math.abs(currentFrameData.data[i+1] - prevFrameData.data[i+1]);
-                    const bDiff = Math.abs(currentFrameData.data[i+2] - prevFrameData.data[i+2]);
-                    
-                    if ((rDiff + gDiff + bDiff) / 3 > threshold) {
-                        changedPixelsCount++;
+                for (let y = 0; y < processHeight; y++) {
+                    for (let x = 0; x < processWidth; x++) {
+                        const i = (y * processWidth + x) * 4;
+                        
+                        const rDiff = Math.abs(currentFrameData.data[i] - prevFrameData.data[i]);
+                        const gDiff = Math.abs(currentFrameData.data[i+1] - prevFrameData.data[i+1]);
+                        const bDiff = Math.abs(currentFrameData.data[i+2] - prevFrameData.data[i+2]);
+                        
+                        if ((rDiff + gDiff + bDiff) / 3 > threshold) {
+                            changedPixelsCount++;
+                            
+                            // Map out the boundary extremes of the moving pixels
+                            if (x < minX) minX = x;
+                            if (x > maxX) maxX = x;
+                            if (y < minY) minY = y;
+                            if (y > maxY) maxY = y;
+                        }
                     }
                 }
 
-                if (changedPixelsCount > (processWidth * processHeight) * 0.025) {
+                // Trigger threshold: minimal movement cluster size
+                if (changedPixelsCount > (processWidth * processHeight) * 0.015) {
                     motionDetected = true;
+                    lastMotionTime = Date.now();
                 }
             }
 
+            // Draw dynamic tracking target square if motion exists
             if (motionDetected) {
-                // UI recording feedback overlay
-                context.strokeStyle = 'rgba(220, 38, 38, 0.8)';
-                context.lineWidth = 6;
-                context.strokeRect(10, 10, overlay.width - 20, overlay.height - 20);
-                
-                context.fillStyle = 'rgba(220, 38, 38, 0.7)';
-                context.font = 'bold 16px sans-serif';
-                context.fillText('• MOTION RECORDING ACTIVE', 25, 40);
+                // Scale coordinates up from downsampled calculation window to real video size
+                const scaleX = overlay.width / processWidth;
+                const scaleY = overlay.height / processHeight;
 
-                triggerVideoRecording();
-            } else if (isRecording) {
-                // Maintain passive visualization lines while system winds down recording buffer window
-                context.strokeStyle = 'rgba(217, 119, 6, 0.4)';
+                const boxX = minX * scaleX;
+                const boxY = minY * scaleY;
+                const boxWidth = (maxX - minX) * scaleX;
+                const boxHeight = (maxY - minY) * scaleY;
+
+                // Draw bright neon bounding tracker rectangle around target
+                context.strokeStyle = 'var(--success)';
                 context.lineWidth = 4;
-                context.strokeRect(10, 10, overlay.width - 20, overlay.height - 20);
+                context.strokeRect(boxX, boxY, boxWidth, boxHeight);
+
+                // Quick small text target tag above tracking square
+                context.fillStyle = 'var(--success)';
+                context.font = 'bold 12px monospace';
+                context.fillText('TARGET ACTIVE', boxX, boxY - 6);
+            }
+
+            // Recording state logic engine
+            const now = Date.now();
+            if (motionDetected) {
+                if (!isRecording && !isRecorderStopping) {
+                    startRecordingSequence();
+                }
+            } else {
+                // If recording is running but motion dropped out longer than the cooldown buffer window
+                if (isRecording && (now - lastMotionTime > RECORDING_BUFFER_MS)) {
+                    stopRecordingSequence();
+                }
+            }
+
+            // Visual Status indicator banner inside monitoring screen
+            if (isRecording) {
+                context.fillStyle = 'var(--error)';
+                context.font = 'bold 16px sans-serif';
+                context.fillText('• REC ACTIVE', 20, 35);
             }
 
             prevFrameData = currentFrameData;
@@ -447,54 +486,51 @@
         animationFrameId = requestAnimationFrame(scanFrame);
     }
 
-    // DVR State Engine Logic
-    function triggerVideoRecording() {
-        if (!isRecording) {
-            isRecording = true;
-            recordedChunks = [];
-            playChime('start');
+    function startRecordingSequence() {
+        isRecording = true;
+        recordedChunks = [];
+        playChime('start');
 
-            // Collect supported media types safely across browsers
-            let options = { mimeType: 'video/webm;codecs=vp9,opus' };
-            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-                options = { mimeType: 'video/webm;codecs=vp8,opus' };
-            }
-            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-                options = { mimeType: 'video/mp4' }; // Fallback for modern container structures
-            }
-
-            try {
-                mediaRecorder = new MediaRecorder(localStream, options);
-            } catch (e) {
-                mediaRecorder = new MediaRecorder(localStream); // System default absolute fallback
-            }
-
-            mediaRecorder.ondataavailable = (event) => {
-                if (event.data && event.data.size > 0) {
-                    recordedChunks.push(event.data);
-                }
-            };
-
-            mediaRecorder.onstop = compileVideoArtifact;
-            mediaRecorder.start();
+        let options = { mimeType: 'video/webm;codecs=vp9,opus' };
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+            options = { mimeType: 'video/webm;codecs=vp8,opus' };
+        }
+        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+            options = { mimeType: 'video/mp4' }; 
         }
 
-        // Reset the countdown extension window every single frame motion continues to express
-        clearTimeout(motionTimeout);
-        motionTimeout = setTimeout(() => {
-            stopVideoRecording();
-        }, RECORDING_BUFFER_MS);
+        try {
+            mediaRecorder = new MediaRecorder(localStream, options);
+        } catch (e) {
+            mediaRecorder = new MediaRecorder(localStream); 
+        }
+
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data && event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
+        };
+
+        mediaRecorder.onstop = () => {
+            compileVideoFile();
+            isRecording = false;
+            isRecorderStopping = false; 
+        };
+
+        mediaRecorder.start(1000); // Collect data chunks explicitly every 1 second
     }
 
-    function stopVideoRecording() {
-        if (isRecording && mediaRecorder && mediaRecorder.state !== 'inactive') {
+    function stopRecordingSequence() {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive' && !isRecorderStopping) {
+            isRecorderStopping = true; 
             mediaRecorder.stop();
-            isRecording = false;
             playChime('stop');
         }
     }
 
-    function compileVideoArtifact() {
+    function compileVideoFile() {
+        if (recordedChunks.length === 0) return;
+        
         activeLogCount++;
         logCount.textContent = `${activeLogCount} Reels`;
 
@@ -509,10 +545,10 @@
             <video src="${videoUrl}" controls playsinline></video>
             <div class="capture-details">
                 <div>
-                    <div class="capture-name">CLIP #${5000 + activeLogCount}</div>
+                    <div class="capture-name">CLIP #${7000 + activeLogCount}</div>
                     <div class="capture-time">Recorded at ${timestamp}</div>
                 </div>
-                <a href="${videoUrl}" download="SecurityCapture_${5000 + activeLogCount}.webm" class="download-btn">Save MP4</a>
+                <a href="${videoUrl}" download="SecurityCapture_${7000 + activeLogCount}.webm" class="download-btn">Save File</a>
             </div>
         `;
         
