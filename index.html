@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xt-ai // Precision Motion Object DVR</title>
+    <title>xt-ai // Telemetry Target Suite</title>
     <style>
         :root {
-            --bg: #090d16;
-            --panel: #131a26;
+            --bg: #070a12;
+            --panel: #0f1624;
             --accent: #2563eb;
-            --success: #10b981;
-            --error: #ef4444;
-            --warn: #f59e0b;
+            --success: #00ffaa;
+            --error: #ff3b3b;
+            --warn: #ffaa00;
             --text: #f1f5f9;
-            --text-muted: #64748b;
+            --text-muted: #4b5563;
             --border: #1e293b;
         }
 
         body {
-            font-family: system-ui, -apple-system, sans-serif;
+            font-family: 'Courier New', Courier, monospace, system-ui, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
@@ -31,7 +31,7 @@
 
         .app-container {
             width: 100%;
-            max-width: 1300px;
+            max-width: 1400px;
             display: grid;
             grid-template-columns: 1fr;
             gap: 20px;
@@ -47,21 +47,22 @@
 
         header {
             grid-column: 1 / -1;
-            text-align: center;
+            text-align: left;
             padding-bottom: 10px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 2px dashed #1e293b;
         }
 
-        h1 { margin: 0 0 5px 0; font-size: 1.8rem; letter-spacing: 0.5px; }
-        header p { margin: 0; color: var(--text-muted); }
+        h1 { margin: 0 0 5px 0; font-size: 1.6rem; letter-spacing: 1px; color: var(--success); }
+        header p { margin: 0; color: #64748b; font-size: 0.9rem; }
 
         .panel {
             background: var(--panel);
-            border-radius: 12px;
+            border-radius: 4px;
             padding: 20px;
             border: 1px solid var(--border);
             display: flex;
             flex-direction: column;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
         }
 
         .workspace-left {
@@ -74,10 +75,10 @@
             width: 100%;
             position: relative;
             aspect-ratio: 16 / 9;
-            background: #000;
-            border-radius: 8px;
+            background: #020408;
+            border-radius: 4px;
             overflow: hidden;
-            border: 1px solid #334155;
+            border: 2px solid #27354f;
         }
 
         video {
@@ -96,85 +97,87 @@
             z-index: 10;
         }
 
-        /* Live Recording Indicator HUD element */
+        /* High-Vis Pro HUD Recording Badge */
         .rec-indicator {
             position: absolute;
-            top: 15px;
-            left: 15px;
-            background: rgba(9, 13, 22, 0.85);
-            padding: 8px 14px;
-            border-radius: 6px;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 59, 59, 0.15);
+            padding: 6px 14px;
+            border-radius: 3px;
             border: 1px solid var(--error);
             display: none;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             z-index: 20;
-            font-size: 0.8rem;
-            font-weight: 700;
-            letter-spacing: 1px;
+            font-size: 0.75rem;
+            font-weight: 900;
+            letter-spacing: 1.5px;
             color: #fff;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 0 15px rgba(255, 59, 59, 0.3);
         }
 
         .rec-indicator.active {
             display: flex;
-            animation: pulseBorder 2s infinite alternate;
         }
 
         .rec-dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             background: var(--error);
             border-radius: 50%;
-            animation: blink 1s infinite;
+            box-shadow: 0 0 8px var(--error);
+            animation: blink 0.8s infinite;
         }
 
         @keyframes blink {
             50% { opacity: 0; }
         }
-        @keyframes pulseBorder {
-            0% { border-color: rgba(239, 68, 68, 0.4); }
-            100% { border-color: rgba(239, 68, 68, 1); }
-        }
 
         .controls-row {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 15px;
             align-items: center;
+            background: #0b101b;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #1e293b;
         }
 
         select, button {
-            padding: 12px 16px;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            border: none;
+            padding: 10px 16px;
+            border-radius: 3px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            font-family: inherit;
+            border: 1px solid #27354f;
             cursor: pointer;
+            transition: all 0.2s ease;
         }
 
         select {
-            background: #1e293b;
+            background: #151f32;
             color: var(--text);
-            border: 1px solid #334155;
             flex: 1;
             min-width: 150px;
         }
 
-        .btn-blue { background: var(--accent); color: white; }
-        .btn-warn { background: var(--warn); color: white; }
+        .btn-blue { background: #1e40af; color: white; border-color: #3b82f6; }
+        .btn-blue:hover { background: #2563eb; box-shadow: 0 0 10px rgba(59,130,246,0.4); }
+        .btn-warn { background: #78350f; color: white; border-color: #d97706; }
 
         .sensitivity-panel {
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            background: #1e293b;
-            padding: 8px 14px;
-            border-radius: 6px;
-            border: 1px solid #334155;
+            gap: 12px;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            background: #151f32;
+            padding: 6px 14px;
+            border-radius: 3px;
+            border: 1px solid #27354f;
         }
 
         .sidebar-right {
@@ -184,19 +187,23 @@
 
         .sidebar-title {
             margin: 0 0 15px 0;
-            font-size: 1.2rem;
-            border-bottom: 1px solid var(--border);
+            font-size: 1.0rem;
+            letter-spacing: 1px;
+            border-bottom: 2px dashed var(--border);
             padding-bottom: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            color: #94a3b8;
         }
 
         .counter-badge {
-            background: var(--error);
+            background: #1e293b;
+            color: var(--success);
             font-size: 0.75rem;
-            padding: 2px 8px;
-            border-radius: 20px;
+            padding: 4px 10px;
+            border: 1px solid #27354f;
+            border-radius: 2px;
         }
 
         .capture-list {
@@ -212,23 +219,23 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-            background: #1c2638;
+            background: #0b101b;
             padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #2e3f59;
-            animation: slideIn 0.3s ease-out;
+            border-radius: 4px;
+            border: 1px solid #1e293b;
+            animation: slideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         @keyframes slideIn {
-            from { opacity: 0; transform: translateX(20px); }
-            to { opacity: 1; transform: translateX(0); }
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .capture-card video {
             width: 100%;
-            border-radius: 6px;
+            border-radius: 2px;
             background: #000;
-            border: 1px solid #475569;
+            border: 1px solid #27354f;
         }
 
         .capture-details {
@@ -237,66 +244,68 @@
             align-items: center;
         }
 
-        .capture-name { font-size: 0.85rem; font-weight: 600; color: #f87171; }
-        .capture-time { font-size: 0.75rem; color: var(--text-muted); }
+        .capture-name { font-size: 0.8rem; font-weight: bold; color: var(--success); }
+        .capture-time { font-size: 0.75rem; color: #64748b; }
         
         .download-btn {
-            background: var(--accent);
-            color: white;
+            background: #151f32;
+            color: var(--success);
+            border: 1px solid #00ffaa33;
             padding: 4px 8px;
             font-size: 0.75rem;
-            border-radius: 4px;
+            border-radius: 2px;
             text-decoration: none;
             text-align: center;
         }
+        .download-btn:hover { background: #00ffaa11; border-color: var(--success); }
 
         .status-msg {
             grid-column: 1 / -1;
             padding: 12px;
-            border-radius: 6px;
-            font-size: 0.9rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
             display: none;
         }
-        .msg-error { background: rgba(220, 38, 38, 0.15); border: 1px solid var(--error); color: #fca5a5; }
+        .msg-error { background: rgba(255, 59, 59, 0.1); border: 1px solid var(--error); color: #fca5a5; }
     </style>
 </head>
 <body>
 
 <div class="app-container">
     <header>
-        <h1>xt-ai // Variable Object Tracker & DVR</h1>
-        <p>Responsive multi-scale silhouette tracking with an automated video capture overlay.</p>
+        <h1>SYS.MATRIX // TACTICAL TELEMETRY LOCK</h1>
+        <p>Instantaneous zero-lag stream generation with crosshair coordinate bounding brackets.</p>
     </header>
 
     <div id="statusAlert" class="status-msg"></div>
 
     <div class="panel workspace-left">
         <div class="viewer-box">
-            <!-- Flashing Recording Signal Sign -->
+            <!-- HUD Warning Header Signal Sign -->
             <div id="recSign" class="rec-indicator">
                 <div class="rec-dot"></div>
-                <span>LIVE RECORDING</span>
+                <span>FEED RECORDING LINK ACTIVE</span>
             </div>
             
             <video id="viewscreen" autoplay playsinline muted></video>
             <canvas id="motionOverlay"></canvas>
         </div>
         <div class="controls-row">
-            <button class="btn-blue" id="initBtn">Scan Channels</button>
-            <select id="selector"><option value="">Awaiting Hardware Scan...</option></select>
-            <button class="btn-warn" id="bypassBtn" style="display:none;">Force Default Cam</button>
+            <button class="btn-blue" id="initBtn">MOUNT HARDWARE</button>
+            <select id="selector"><option value="">SCANNING PERIPHERALS...</option></select>
+            <button class="btn-warn" id="bypassBtn" style="display:none;">FORCE FEED</button>
             
             <div class="sensitivity-panel">
-                <label for="thresholdSlider">Sensitivity</label>
-                <input type="range" id="thresholdSlider" min="10" max="60" value="22" style="cursor:pointer; accent-color:var(--accent);">
+                <label for="thresholdSlider">SENSITIVITY</label>
+                <input type="range" id="thresholdSlider" min="10" max="60" value="20" style="cursor:pointer; accent-color:var(--success);">
             </div>
         </div>
     </div>
 
     <div class="panel sidebar-right">
         <h3 class="sidebar-title">
-            Recorded Video Vault 
-            <span class="counter-badge" id="logCount">0 Reels</span>
+            ARCHIVE REELS 
+            <span class="counter-badge" id="logCount">0 SECURED</span>
         </h3>
         <div class="capture-list" id="captureContainer"></div>
     </div>
@@ -326,9 +335,6 @@
     let recordedChunks = [];
     let isRecording = false;
     let isRecorderStopping = false;
-    let lastMotionTime = 0;
-    
-    const RECORDING_BUFFER_MS = 4000; // Recording extension grace period
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playChime(type) {
@@ -338,15 +344,15 @@
         gain.connect(audioCtx.destination);
         
         if (type === 'start') {
-            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); 
-            osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.08); 
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime); 
+            gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.05);
         } else {
-            osc.frequency.setValueAtTime(659.25, audioCtx.currentTime);
-            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime + 0.08);
-            gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.05);
         }
     }
 
@@ -358,7 +364,7 @@
             check.getTracks().forEach(t => t.stop()); 
             await findVideoChannels();
         } catch (e) {
-            showAlert("error", `Permission Blocked: ${e.message}`);
+            showAlert("error", `CRITICAL_ACCESS_DENIED: ${e.message}`);
         }
     });
 
@@ -369,7 +375,7 @@
             localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
             bindStreamToUI(localStream);
         } catch (e) {
-            showAlert("error", `Bypass failed. Hardware layer entirely blocked.`);
+            showAlert("error", `Emergency bypass failed. Driver array locked.`);
         }
     });
 
@@ -379,14 +385,14 @@
 
         selector.innerHTML = '';
         if (videoDevices.length === 0) {
-            selector.innerHTML = '<option>No hardware discovered</option>';
+            selector.innerHTML = '<option>NO DISCOVERED HARDWARE</option>';
             return;
         }
 
         videoDevices.forEach((cam, index) => {
             const node = document.createElement('option');
             node.value = cam.deviceId;
-            node.text = cam.label || `Video Channel ${index + 1}`;
+            node.text = cam.label || `STREAM CHANNEL MATRX-${index + 1}`;
             selector.appendChild(node);
         });
 
@@ -410,7 +416,7 @@
                 bindStreamToUI(stream);
             } catch (secondError) {
                 bypassBtn.style.display = "inline-block";
-                showAlert("error", "Hardware Critical: Camera busy. Click 'Force Default Cam'.");
+                showAlert("error", "LINK FAILURE: Feed occupied. Force mounting required.");
             }
         }
     }
@@ -430,7 +436,6 @@
     function startMotionDetectionPipeline() {
         if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
-        // Frame process resolutions for tracking stability
         const processWidth = 160;
         const processHeight = 120;
         const processCanvas = document.createElement('canvas');
@@ -450,8 +455,6 @@
             context.clearRect(0, 0, overlay.width, overlay.height);
 
             let motionDetected = false;
-            
-            // Extreme bounds to construct our precision crop target square
             let minX = processWidth, maxX = 0;
             let minY = processHeight, maxY = 0;
             let changedCount = 0;
@@ -467,10 +470,8 @@
                         const gDiff = Math.abs(currentFrameData.data[i+1] - prevFrameData.data[i+1]);
                         const bDiff = Math.abs(currentFrameData.data[i+2] - prevFrameData.data[i+2]);
                         
-                        // Detect precise variance index
                         if ((rDiff + gDiff + bDiff) / 3 > threshold) {
                             changedCount++;
-                            
                             if (x < minX) minX = x;
                             if (x > maxX) maxX = x;
                             if (y < minY) minY = y;
@@ -479,46 +480,52 @@
                     }
                 }
 
-                // Low cluster trigger allowance to detect small fast moving items
-                if (changedCount > 5) { 
+                if (changedCount > 6) { 
                     motionDetected = true;
-                    lastMotionTime = Date.now();
                 }
             }
 
-            // Draw dynamic custom size container around the exact shape of movement
+            // High-End Cyber Target Locking Bracket Display Mechanics
             if (motionDetected && minX <= maxX && minY <= maxY) {
                 const scaleX = overlay.width / processWidth;
                 const scaleY = overlay.height / processHeight;
 
-                // Margins added around vectors to ensure clear framing
-                const padding = 12;
+                const padding = 15;
                 const boxX = Math.max(0, (minX * scaleX) - padding);
                 const boxY = Math.max(0, (minY * scaleY) - padding);
                 const boxWidth = Math.min(overlay.width - boxX, ((maxX - minX) * scaleX) + (padding * 2));
                 const boxHeight = Math.min(overlay.height - boxY, ((maxY - minY) * scaleY) + (padding * 2));
 
-                // UI rendering parameters for tracking box
                 context.strokeStyle = 'var(--success)';
-                context.lineWidth = 3;
-                context.setLineDash([6, 4]); // Clean data layout aesthetic
-                context.strokeRect(boxX, boxY, boxWidth, boxHeight);
-                context.setLineDash([]); // Reset line formatting
+                context.lineWidth = 2;
+                
+                // Draw Professional Tactical Target Corners instead of a boring basic square
+                const len = Math.min(20, boxWidth * 0.2); // Bracket arm length
+                
+                // Top-Left Bracket
+                context.beginPath(); context.moveTo(boxX, boxY + len); context.lineTo(boxX, boxY); context.lineTo(boxX + len, boxY); context.stroke();
+                // Top-Right Bracket
+                context.beginPath(); context.moveTo(boxX + boxWidth, boxY + len); context.lineTo(boxX + boxWidth, boxY); context.lineTo(boxX + boxWidth - len, boxY); context.stroke();
+                // Bottom-Left Bracket
+                context.beginPath(); context.moveTo(boxX, boxY + boxHeight - len); context.lineTo(boxX, boxY + boxHeight); context.lineTo(boxX + len, boxY + boxHeight); context.stroke();
+                // Bottom-Right Bracket
+                context.beginPath(); context.moveTo(boxX + boxWidth, boxY + boxHeight - len); context.lineTo(boxX + boxWidth, boxY + boxHeight); context.lineTo(boxX + boxWidth - len, boxY + boxHeight); context.stroke();
 
-                // Small crosshair indicators in corners of tracking frame
+                // Telemetry Tracking Label & Digital Readouts
                 context.fillStyle = 'var(--success)';
-                context.font = 'bold 11px monospace';
-                context.fillText(`OBJ: ${Math.round(boxWidth)}x${Math.round(boxHeight)}`, boxX + 6, boxY + 16);
+                context.font = 'bold 10px monospace';
+                context.fillText(`LOCK // X:${Math.round(boxX)} Y:${Math.round(boxY)}`, boxX + 4, boxY - 6);
+                context.fillText(`DIM // ${Math.round(boxWidth)}x${Math.round(boxHeight)}`, boxX + 4, boxY + boxHeight + 14);
             }
 
-            // Stateful Recording Controller Architecture 
-            const now = Date.now();
+            // Zero-Latency Immediate Recording Pipeline State Switching
             if (motionDetected) {
                 if (!isRecording && !isRecorderStopping) {
                     startRecordingSequence();
                 }
             } else {
-                if (isRecording && (now - lastMotionTime > RECORDING_BUFFER_MS)) {
+                // Instantly stops recording the exact frame motion is no longer found
+                if (isRecording) {
                     stopRecordingSequence();
                 }
             }
@@ -535,7 +542,6 @@
         recordedChunks = [];
         playChime('start');
         
-        // Show recording signal sign UI component
         recSign.classList.add('active');
 
         let options = { mimeType: 'video/webm;codecs=vp9,opus' };
@@ -562,10 +568,10 @@
             compileVideoFile();
             isRecording = false;
             isRecorderStopping = false; 
-            recSign.classList.remove('active'); // Hide recording badge on finish
+            recSign.classList.remove('active');
         };
 
-        mediaRecorder.start(1000); 
+        mediaRecorder.start(500); // 500ms chunking slices for instant closure saving
     }
 
     function stopRecordingSequence() {
@@ -580,7 +586,7 @@
         if (recordedChunks.length === 0) return;
         
         activeLogCount++;
-        logCount.textContent = `${activeLogCount} Reels`;
+        logCount.textContent = `${activeLogCount} SECURED`;
 
         const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
         const videoUrl = URL.createObjectURL(blob);
@@ -593,10 +599,10 @@
             <video src="${videoUrl}" controls playsinline></video>
             <div class="capture-details">
                 <div>
-                    <div class="capture-name">CLIP #${7000 + activeLogCount}</div>
-                    <div class="capture-time">Recorded at ${timestamp}</div>
+                    <div class="capture-name">REEL_LOG_${9000 + activeLogCount}</div>
+                    <div class="capture-time">INDEXED [${timestamp}]</div>
                 </div>
-                <a href="${videoUrl}" download="SecurityCapture_${7000 + activeLogCount}.webm" class="download-btn">Save File</a>
+                <a href="${videoUrl}" download="Matrix_Capture_${9000 + activeLogCount}.webm" class="download-btn">DOWNLOAD</a>
             </div>
         `;
         
