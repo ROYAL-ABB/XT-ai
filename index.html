@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SYS.MATRIX // Precision Analytics Suite</title>
+    <title>SYS.MATRIX // AI Vision Analytics</title>
+    <!-- Importing TensorFlow.js and COCO-SSD Object Recognition Engine -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <style>
         :root {
             --bg: #050811;
@@ -11,7 +14,6 @@
             --accent: #2563eb;
             --success: #00ffaa;
             --error: #ff3b3b;
-            --warn: #ffaa00;
             --text: #f1f5f9;
             --border: #1e293b;
         }
@@ -95,38 +97,34 @@
             z-index: 10;
         }
 
-        .rec-indicator {
+        .system-status-badge {
             position: absolute;
             top: 20px;
             left: 20px;
-            background: rgba(255, 59, 59, 0.15);
+            background: rgba(0, 255, 170, 0.1);
             padding: 6px 14px;
             border-radius: 3px;
-            border: 1px solid var(--error);
-            display: none;
+            border: 1px solid var(--success);
+            display: flex;
             align-items: center;
             gap: 10px;
             z-index: 20;
             font-size: 0.75rem;
             font-weight: 900;
-            letter-spacing: 1.5px;
             color: #fff;
             backdrop-filter: blur(8px);
-            box-shadow: 0 0 15px rgba(255, 59, 59, 0.3);
         }
 
-        .rec-indicator.active { display: flex; }
-
-        .rec-dot {
+        .pulse-dot {
             width: 8px;
             height: 8px;
-            background: var(--error);
+            background: var(--success);
             border-radius: 50%;
-            box-shadow: 0 0 8px var(--error);
-            animation: blink 0.8s infinite;
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 1.5s infinite;
         }
 
-        @keyframes blink { 50% { opacity: 0; } }
+        @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
 
         .controls-row {
             display: flex;
@@ -151,19 +149,6 @@
 
         select { background: #111827; color: var(--text); flex: 1; min-width: 150px; }
         .btn-blue { background: #1e40af; color: white; border-color: #3b82f6; }
-        .btn-warn { background: #78350f; color: white; border-color: #d97706; }
-
-        .sensitivity-panel {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-size: 0.8rem;
-            color: #94a3b8;
-            background: #111827;
-            padding: 6px 14px;
-            border-radius: 3px;
-            border: 1px solid #27354f;
-        }
 
         .sidebar-right {
             max-height: 75vh;
@@ -208,10 +193,12 @@
             border: 1px solid #1e293b;
         }
 
-        .capture-card video {
+        .capture-card img {
             width: 100%;
-            background: #000;
+            height: auto;
+            border-radius: 2px;
             border: 1px solid #27354f;
+            background: #000;
         }
 
         .capture-details {
@@ -229,13 +216,19 @@
         .capture-name { font-size: 0.8rem; font-weight: bold; color: var(--success); }
         .capture-time { font-size: 0.75rem; color: #64748b; }
         
-        .chroma-tag {
+        .intelligence-box {
             font-size: 0.75rem;
             background: #111827;
-            padding: 4px 8px;
+            padding: 8px;
             border-radius: 2px;
-            border-left: 3px solid var(--success);
+            border-left: 3px solid var(--accent);
             color: #cbd5e1;
+            line-height: 1.4;
+        }
+
+        .intelligence-box span {
+            color: var(--success);
+            font-weight: bold;
         }
 
         .download-btn {
@@ -250,51 +243,35 @@
             margin-top: 4px;
         }
         .download-btn:hover { background: #00ffaa11; border-color: var(--success); }
-
-        .status-msg {
-            grid-column: 1 / -1;
-            padding: 12px;
-            font-size: 0.85rem;
-            display: none;
-        }
-        .msg-error { background: rgba(255, 59, 59, 0.1); border: 1px solid var(--error); color: #fca5a5; }
     </style>
 </head>
 <body>
 
 <div class="app-container">
     <header>
-        <h1>SYS.MATRIX // OPTICAL CHROMATIC LOCK</h1>
-        <p>Zero-latency recording engine tracking target location vectors and real-time palette attributes.</p>
+        <h1>SYS.MATRIX // NEURAL SNAPSHOT SUITE</h1>
+        <p>Object tracking, color recognition, and fluid interpolation vectors powered by TensorFlow AI.</p>
     </header>
-
-    <div id="statusAlert" class="status-msg"></div>
 
     <div class="panel workspace-left">
         <div class="viewer-box">
-            <div id="recSign" class="rec-indicator">
-                <div class="rec-dot"></div>
-                <span>RECORDING STREAM PIPELINE</span>
+            <div class="system-status-badge">
+                <div class="pulse-dot"></div>
+                <span id="statusMessage">CORE INITIALIZING...</span>
             </div>
             
             <video id="viewscreen" autoplay playsinline muted></video>
             <canvas id="motionOverlay"></canvas>
         </div>
         <div class="controls-row">
-            <button class="btn-blue" id="initBtn">MOUNT SYSTEM</button>
-            <select id="selector"><option value="">SCANNING PORTS...</option></select>
-            <button class="btn-warn" id="bypassBtn" style="display:none;">FORCE FEED</button>
-            
-            <div class="sensitivity-panel">
-                <label for="thresholdSlider">THRESHOLD</label>
-                <input type="range" id="thresholdSlider" min="10" max="60" value="22" style="cursor:pointer; accent-color:var(--success);">
-            </div>
+            <button class="btn-blue" id="initBtn">MOUNT AI PERIPHERALS</button>
+            <select id="selector"><option value="">WAITING ON HARDWARE...</option></select>
         </div>
     </div>
 
     <div class="panel sidebar-right">
         <h3 class="sidebar-title">
-            SECURED ARCHIVE
+            CAPTURED ARCHIVE
             <span class="counter-badge" id="logCount">0 REELS</span>
         </h3>
         <div class="capture-list" id="captureContainer"></div>
@@ -308,51 +285,55 @@
     
     const initBtn = document.getElementById('initBtn');
     const selector = document.getElementById('selector');
-    const bypassBtn = document.getElementById('bypassBtn');
-    const statusAlert = document.getElementById('statusAlert');
     const captureContainer = document.getElementById('captureContainer');
     const logCount = document.getElementById('logCount');
-    const thresholdSlider = document.getElementById('thresholdSlider');
-    const recSign = document.getElementById('recSign');
+    const statusMessage = document.getElementById('statusMessage');
 
     let localStream = null;
     let animationFrameId = null;
     let prevFrameData = null;
     let activeLogCount = 0;
+    let netModel = null;
     
-    let mediaRecorder = null;
-    let recordedChunks = [];
-    let isRecording = false;
-    let isRecorderStopping = false;
-    let activeChromaAnalysis = "Scanning Profile...";
+    // Smooth Interpolation Variables
+    let currentX = 0, currentY = 0, currentW = 0, currentH = 0;
+    let targetX = 0, targetY = 0, targetW = 0, targetH = 0;
+    const interpolationFactor = 0.15; // Lower values = smoother, higher values = faster movement
 
-    // Color Profiler Logic
-    function identifyChromaPalette(r, g, b) {
-        if (r > 180 && g > 180 && b > 180) return "WHITE / LIGHT REFLECTIVE";
-        if (r < 55 && g < 55 && b < 55) return "BLACK / DARK SHADOW";
+    let motionDetectedActive = false;
+    let frameMotionResetTimeout = null;
+    let currentObjectClassification = "Unknown Subject";
+    let currentObjectChroma = "Analyzing hue...";
+
+    // Color Analytics Engine
+    function extractChromaProfile(r, g, b) {
+        if (r > 200 && g > 200 && b > 200) return "White/Bright Reflective";
+        if (r < 60 && g < 60 && b < 60) return "Black/Dark Shade";
         
         let max = Math.max(r, g, b);
-        let currentHue = "UNKNOWN HUE";
+        if (max === r) return (r - g > 40 && r - b > 40) ? "Red/Warm Spectrum" : "Orange/Brown Tone";
+        if (max === g) return "Green Spectrum";
+        if (max === b) return "Blue/Cold Palette";
         
-        if (max === r) currentHue = "RED / WARM SPECTRUM";
-        else if (max === g) currentHue = "GREEN / ECO TEXTURE";
-        else if (max === b) currentHue = "BLUE / COLD PALETTE";
-        
-        // Secondary composite spectrum calculation
-        if (Math.abs(r - g) < 25 && r > 100 && b < 80) currentHue = "YELLOW / AMBER";
-        if (Math.abs(r - b) < 30 && r > 100 && g < 80) currentHue = "PURPLE / MAGENTA";
-        
-        return `${currentHue} (RGB: ${r},${g},${b})`;
+        if (Math.abs(r - g) < 20 && r > 120) return "Yellow/Amber Accent";
+        return "Mixed Neutral Blend";
     }
 
+    // Load AI Model on Start
+    async function loadNeuralArchitecture() {
+        statusMessage.textContent = "LOADING NEURAL MODEL...";
+        netModel = await cocoSsd.load();
+        statusMessage.textContent = "AI LOGIC ONLINE. MOUNT CAMERA.";
+    }
+    loadNeuralArchitecture();
+
     initBtn.addEventListener('click', async () => {
-        showAlert("", "");
         try {
-            const check = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            const check = await navigator.mediaDevices.getUserMedia({ video: true });
             check.getTracks().forEach(t => t.stop()); 
             await findVideoChannels();
         } catch (e) {
-            showAlert("error", `ACCESS_ERROR: ${e.message}`);
+            statusMessage.textContent = "CAMERA ACCESS DENIED";
         }
     });
 
@@ -365,7 +346,7 @@
         videoDevices.forEach((cam, index) => {
             const node = document.createElement('option');
             node.value = cam.deviceId;
-            node.text = cam.label || `STREAM MATRX-${index + 1}`;
+            node.text = cam.label || `STREAM DEVICE-${index + 1}`;
             selector.appendChild(node);
         });
         executeRescueStream(videoDevices[0].deviceId);
@@ -373,26 +354,17 @@
 
     async function executeRescueStream(hardwareId) {
         if (localStream) { localStream.getTracks().forEach(t => t.stop()); }
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: hardwareId } }, audio: true });
-            bindStreamToUI(stream);
-        } catch (e) {
-            localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-            bindStreamToUI(localStream);
-        }
-    }
-
-    function bindStreamToUI(stream) {
-        localStream = stream;
-        video.srcObject = stream;
+        localStream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: hardwareId } } });
+        video.srcObject = localStream;
         video.onloadedmetadata = () => {
             overlay.width = video.videoWidth;
             overlay.height = video.videoHeight;
-            startMotionDetectionPipeline();
+            statusMessage.textContent = "SYSTEM LIVE // SCANNING";
+            startVisionPipeline();
         };
     }
 
-    function startMotionDetectionPipeline() {
+    function startVisionPipeline() {
         if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
         const processWidth = 160;
@@ -402,9 +374,22 @@
         processCanvas.height = processHeight;
         const processCtx = processCanvas.getContext('2d');
 
-        function scanFrame() {
+        // Periodically run AI object classification inside the canvas stream
+        setInterval(async () => {
+            if (!video.paused && video.readyState >= 2 && netModel && motionDetectedActive) {
+                const predictions = await netModel.detect(video);
+                if (predictions.length > 0) {
+                    // Grab top confidence object
+                    currentObjectClassification = predictions[0].class.toUpperCase();
+                } else {
+                    currentObjectClassification = "OBJECT UNKNOWN";
+                }
+            }
+        }, 400);
+
+        function processFrameLoop() {
             if (video.paused || video.ended) {
-                animationFrameId = requestAnimationFrame(scanFrame);
+                animationFrameId = requestAnimationFrame(processFrameLoop);
                 return;
             }
 
@@ -412,26 +397,21 @@
             const currentFrameData = processCtx.getImageData(0, 0, processWidth, processHeight);
             context.clearRect(0, 0, overlay.width, overlay.height);
 
-            let motionDetected = false;
+            let hasMotion = false;
             let minX = processWidth, maxX = 0;
             let minY = processHeight, maxY = 0;
             let changedCount = 0;
-            
-            // Core sampling colors
             let sumR = 0, sumG = 0, sumB = 0;
 
             if (prevFrameData) {
-                const threshold = parseInt(thresholdSlider.value);
-
                 for (let y = 0; y < processHeight; y++) {
                     for (let x = 0; x < processWidth; x++) {
                         const i = (y * processWidth + x) * 4;
+                        const diff = (Math.abs(currentFrameData.data[i] - prevFrameData.data[i]) +
+                                      Math.abs(currentFrameData.data[i+1] - prevFrameData.data[i+1]) +
+                                      Math.abs(currentFrameData.data[i+2] - prevFrameData.data[i+2])) / 3;
                         
-                        const rDiff = Math.abs(currentFrameData.data[i] - prevFrameData.data[i]);
-                        const gDiff = Math.abs(currentFrameData.data[i+1] - prevFrameData.data[i+1]);
-                        const bDiff = Math.abs(currentFrameData.data[i+2] - prevFrameData.data[i+2]);
-                        
-                        if ((rDiff + gDiff + bDiff) / 3 > threshold) {
+                        if (diff > 25) { // Sensitivity threshold
                             changedCount++;
                             sumR += currentFrameData.data[i];
                             sumG += currentFrameData.data[i+1];
@@ -445,138 +425,105 @@
                     }
                 }
 
-                if (changedCount > 8) { 
-                    motionDetected = true;
-                    // Compute localized chromatic average values
+                if (changedCount > 12) { 
+                    hasMotion = true;
                     let avgR = Math.round(sumR / changedCount);
                     let avgG = Math.round(sumG / changedCount);
                     let avgB = Math.round(sumB / changedCount);
-                    activeChromaAnalysis = identifyChromaPalette(avgR, avgG, avgB);
+                    currentObjectChroma = extractChromaProfile(avgR, avgG, avgB);
                 }
             }
 
-            // Rendering professional crosshairs & chroma analytical readings
-            if (motionDetected && minX <= maxX && minY <= maxY) {
+            if (hasMotion && minX <= maxX && minY <= maxY) {
                 const scaleX = overlay.width / processWidth;
                 const scaleY = overlay.height / processHeight;
-                const padding = 15;
+                const padding = 20;
                 
-                const boxX = Math.max(0, (minX * scaleX) - padding);
-                const boxY = Math.max(0, (minY * scaleY) - padding);
-                const boxWidth = Math.min(overlay.width - boxX, ((maxX - minX) * scaleX) + (padding * 2));
-                const boxHeight = Math.min(overlay.height - boxY, ((maxY - minY) * scaleY) + (padding * 2));
+                targetX = Math.max(0, (minX * scaleX) - padding);
+                targetY = Math.max(0, (minY * scaleY) - padding);
+                targetW = Math.min(overlay.width - targetX, ((maxX - minX) * scaleX) + (padding * 2));
+                targetH = Math.min(overlay.height - targetY, ((maxY - minY) * scaleY) + (padding * 2));
 
+                if (!motionDetectedActive) {
+                    motionDetectedActive = true;
+                    statusMessage.textContent = "LOCKING SCENE TARGET...";
+                }
+                clearTimeout(frameMotionResetTimeout);
+            } else {
+                if (motionDetectedActive && !frameMotionResetTimeout) {
+                    // Capture snapshot instantly when motion ceases completely
+                    frameMotionResetTimeout = setTimeout(() => {
+                        takeTelemetrySnapshot();
+                        motionDetectedActive = false;
+                        statusMessage.textContent = "SYSTEM LIVE // SCANNING";
+                        targetW = 0; targetH = 0; // Contract brackets
+                    }, 400); 
+                }
+            }
+
+            // Smooth Dampening Bounding Interpolation
+            currentX += (targetX - currentX) * interpolationFactor;
+            currentY += (targetY - currentY) * interpolationFactor;
+            currentW += (targetW - currentW) * interpolationFactor;
+            currentH += (targetH - currentH) * interpolationFactor;
+
+            // Render HUD target brackets if dimensions exist
+            if (currentW > 5) {
                 context.strokeStyle = 'var(--success)';
                 context.lineWidth = 2;
-                const len = Math.min(20, boxWidth * 0.2);
+                const len = Math.min(20, currentW * 0.2);
                 
-                context.beginPath(); context.moveTo(boxX, boxY + len); context.lineTo(boxX, boxY); context.lineTo(boxX + len, boxY); context.stroke();
-                context.beginPath(); context.moveTo(boxX + boxWidth, boxY + len); context.lineTo(boxX + boxWidth, boxY); context.lineTo(boxX + boxWidth - len, boxY); context.stroke();
-                context.beginPath(); context.moveTo(boxX, boxY + boxHeight - len); context.lineTo(boxX, boxY + boxHeight); context.lineTo(boxX + len, boxY + boxHeight); context.stroke();
-                context.beginPath(); context.moveTo(boxX + boxWidth, boxY + boxHeight - len); context.lineTo(boxX + boxWidth, boxY + boxHeight); context.lineTo(boxX + boxWidth - len, boxY + boxHeight); context.stroke();
+                context.beginPath(); context.moveTo(currentX, currentY + len); context.lineTo(currentX, currentY); context.lineTo(currentX + len, currentY); context.stroke();
+                context.beginPath(); context.moveTo(currentX + currentW, currentY + len); context.lineTo(currentX + currentW, currentY); context.lineTo(currentX + currentW - len, currentY); context.stroke();
+                context.beginPath(); context.moveTo(currentX, currentY + currentH - len); context.lineTo(currentX, currentY + currentH); context.lineTo(currentX + len, currentY + currentH); context.stroke();
+                context.beginPath(); context.moveTo(currentX + currentW, currentY + currentH - len); context.lineTo(currentX + currentW, currentY + currentH); context.lineTo(currentX + currentW - len, currentY + currentH); context.stroke();
 
                 context.fillStyle = 'var(--success)';
                 context.font = 'bold 11px monospace';
-                context.fillText(`TARGET LOCKED // DETECTED PALETTE: ${activeChromaAnalysis}`, boxX + 4, boxY - 8);
-            }
-
-            // Stateful Recording Controller with a 500ms minimal data buffer flush window
-            if (motionDetected) {
-                if (!isRecording && !isRecorderStopping) {
-                    startRecordingSequence();
-                }
-            } else {
-                if (isRecording && !isRecorderStopping) {
-                    isRecorderStopping = true;
-                    // Added a short 500ms timeout to ensure the browser has enough frame data to build a valid video file
-                    setTimeout(() => {
-                        stopRecordingSequence();
-                    }, 500);
-                }
+                context.fillText(`AI ID: ${currentObjectClassification}`, currentX + 4, currentY - 24);
+                context.fillText(`CHROMA: ${currentObjectChroma}`, currentX + 4, currentY - 8);
             }
 
             prevFrameData = currentFrameData;
-            animationFrameId = requestAnimationFrame(scanFrame);
+            animationFrameId = requestAnimationFrame(processFrameLoop);
         }
 
-        animationFrameId = requestAnimationFrame(scanFrame);
+        animationFrameId = requestAnimationFrame(processFrameLoop);
     }
 
-    function startRecordingSequence() {
-        isRecording = true;
-        recordedChunks = [];
-        recSign.classList.add('active');
-
-        let options = { mimeType: 'video/webm;codecs=vp9,opus' };
-        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-            options = { mimeType: 'video/webm;codecs=vp8,opus' };
-        }
-        if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-            options = { mimeType: 'video/mp4' }; 
-        }
-
-        try {
-            mediaRecorder = new MediaRecorder(localStream, options);
-        } catch (e) {
-            mediaRecorder = new MediaRecorder(localStream); 
-        }
-
-        mediaRecorder.ondataavailable = (event) => {
-            if (event.data && event.data.size > 0) {
-                recordedChunks.push(event.data);
-            }
-        };
-
-        mediaRecorder.onstop = () => {
-            compileVideoFile();
-            isRecording = false;
-            isRecorderStopping = false; 
-            recSign.classList.remove('active');
-        };
-
-        mediaRecorder.start(100); // 100ms mini slices to make sure data is constantly captured
-    }
-
-    function stopRecordingSequence() {
-        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-            mediaRecorder.stop();
-        }
-    }
-
-    function compileVideoFile() {
-        // Prevent empty video files from registering
-        if (recordedChunks.length < 2) return; 
-        
+    function takeTelemetrySnapshot() {
         activeLogCount++;
-        logCount.textContent = `${activeLogCount} SECURED`;
+        logCount.textContent = `${activeLogCount} REELS`;
 
-        const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
-        const videoUrl = URL.createObjectURL(blob);
+        // Draw current video frame onto an invisible offscreen canvas to grab the image file
+        const captureCanvas = document.createElement('canvas');
+        captureCanvas.width = video.videoWidth;
+        captureCanvas.height = video.videoHeight;
+        const captureCtx = captureCanvas.getContext('2d');
+        captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height);
+        
+        const dataUrl = captureCanvas.toDataURL('image/jpeg');
         const timestamp = new Date().toLocaleTimeString();
         
         const card = document.createElement('div');
         card.className = 'capture-card';
         
         card.innerHTML = `
-            <video src="${videoUrl}" controls playsinline></video>
+            <img src="${dataUrl}" alt="Secured Telemetry Snapshot" />
             <div class="capture-details">
                 <div class="meta-line-main">
-                    <div class="capture-name">REEL_LOG_${9000 + activeLogCount}</div>
+                    <div class="capture-name">SNAP_LOG_${7000 + activeLogCount}</div>
                     <div class="capture-time">[${timestamp}]</div>
                 </div>
-                <div class="chroma-tag">PALETTE: ${activeChromaAnalysis}</div>
-                <a href="${videoUrl}" download="Matrix_Capture_${9000 + activeLogCount}.webm" class="download-btn">DOWNLOAD</a>
+                <div class="intelligence-box">
+                    IDENTIFIED: <span>${currentObjectClassification}</span><br>
+                    DOMINANT HUE: <span>${currentObjectChroma}</span>
+                </div>
+                <a href="${dataUrl}" download="Matrix_Snap_${7000 + activeLogCount}.jpg" class="download-btn">DOWNLOAD SNAPSHOT</a>
             </div>
         `;
         
         captureContainer.insertBefore(card, captureContainer.firstChild);
-    }
-
-    function showAlert(type, msg) {
-        if(!msg) { statusAlert.style.display = "none"; return; }
-        statusAlert.className = `status-msg msg-${type}`;
-        statusAlert.textContent = msg;
-        statusAlert.style.display = "block";
     }
 
     selector.addEventListener('change', (e) => {
