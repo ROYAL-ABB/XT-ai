@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>APEX.MATRIX // Ultimate Target Suite</title>
+    <title>APEX.MATRIX // Precision Target Suite</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <style>
@@ -49,9 +49,6 @@
             grid-column: 1 / -1;
             padding-bottom: 12px;
             border-bottom: 2px solid #1e293b;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
 
         h1 { margin: 0; font-size: 1.3rem; font-weight: 800; letter-spacing: 2px; color: var(--success); }
@@ -117,14 +114,13 @@
         .pulse-dot {
             width: 8px;
             height: 8px;
-            background: var(--accent);
+            background: #ff3b3b;
             border-radius: 50%;
-            box-shadow: 0 0 8px var(--accent);
         }
         .pulse-dot.active {
             background: var(--success);
             box-shadow: 0 0 10px var(--success);
-            animation: flash 0.3s infinite alternate;
+            animation: flash 0.5s infinite alternate;
         }
         @keyframes flash { from { opacity: 0.4; } to { opacity: 1; } }
 
@@ -150,7 +146,11 @@
         }
 
         select { background: #0f172a; color: var(--text); flex: 1; }
-        button { background: var(--accent); color: white; border: none; }
+        
+        .btn-blue { background: var(--accent); color: white; border: none; }
+        .btn-toggle { background: #1e293b; color: white; border: 1px solid #334155; }
+        .btn-toggle.running { background: #991b1b; border-color: #ef4444; }
+        
         button:hover { filter: brightness(1.1); }
 
         .sidebar-right {
@@ -202,7 +202,10 @@
             height: auto;
             border-radius: 4px;
             border: 1px solid #24334d;
+            cursor: zoom-in;
+            transition: transform 0.2s;
         }
+        .capture-card img:hover { transform: scale(1.02); }
 
         .meta-line-main {
             display: flex;
@@ -229,29 +232,62 @@
             font-weight: 600;
         }
 
-        .download-btn {
-            background: rgba(59, 130, 246, 0.1);
-            color: var(--accent);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            padding: 6px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            text-decoration: none;
-            text-align: center;
-            font-weight: bold;
-            transition: all 0.2s;
+        /* LIGHTBOX/MODAL ELEMENTS */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(3, 6, 15, 0.95);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            cursor: zoom-out;
+            backdrop-filter: blur(12px);
         }
-        .download-btn:hover { background: var(--accent); color: white; }
+
+        .modal-wrapper {
+            position: relative;
+            max-width: 90%;
+            max-height: 85%;
+        }
+
+        .modal-img {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 6px;
+            border: 2px solid #24334d;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-caption {
+            text-align: center;
+            margin-top: 15px;
+            font-family: monospace;
+            color: var(--success);
+            font-size: 0.9rem;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            color: #64748b;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .modal-close:hover { color: white; }
     </style>
 </head>
 <body>
 
 <div class="app-container">
     <header>
-        <div>
-            <h1>APEX // HIGH-ACCURACY MOTION INTELLIGENCE</h1>
-            <p>Optical flow tracking engine with deep classification matrixing.</p>
-        </div>
+        <h1>APEX // INSTANT ACTION MOTION LOCK</h1>
+        <p>Captures strictly during active motion. Targets bounding center frame directly over kinetic source.</p>
     </header>
 
     <div class="panel workspace-left">
@@ -265,7 +301,8 @@
             <canvas id="motionOverlay"></canvas>
         </div>
         <div class="controls-row">
-            <button id="initBtn">INITIALIZE OPTICS</button>
+            <button class="btn-blue" id="initBtn">INITIALIZE OPTICS</button>
+            <button class="btn-toggle" id="toggleStateBtn" disabled>START ENGINE</button>
             <select id="selector"><option value="">AWAITING INTERFACE...</option></select>
         </div>
     </div>
@@ -279,17 +316,33 @@
     </div>
 </div>
 
+<!-- Global Micro Lightbox Window -->
+<div class="modal-overlay" id="lightbox">
+    <div class="modal-wrapper">
+        <span class="modal-close" id="lightboxClose">&times;</span>
+        <img class="modal-img" id="lightboxImg" src="" alt="Enlarged Telemetry View">
+        <div class="modal-caption" id="lightboxCaption"></div>
+    </div>
+</div>
+
 <script>
     const video = document.getElementById('viewscreen');
     const overlay = document.getElementById('motionOverlay');
     const context = overlay.getContext('2d');
     
     const initBtn = document.getElementById('initBtn');
+    const toggleStateBtn = document.getElementById('toggleStateBtn');
     const selector = document.getElementById('selector');
     const captureContainer = document.getElementById('captureContainer');
     const logCount = document.getElementById('logCount');
     const statusMessage = document.getElementById('statusMessage');
     const statusDot = document.getElementById('statusDot');
+
+    // Lightbox Components
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightboxImg');
+    const lightboxCaption = document.getElementById('lightboxCaption');
+    const lightboxClose = document.getElementById('lightboxClose');
 
     let localStream = null;
     let animationFrameId = null;
@@ -297,24 +350,23 @@
     let activeLogCount = 0;
     let netModel = null;
     
-    // Advanced tracking coordinates
+    // Exact targeting locks
     let currentX = 0, currentY = 0, currentW = 0, currentH = 0;
     let targetX = 0, targetY = 0, targetW = 0, targetH = 0;
-    const lerpSpeed = 0.25; // Snappier response speed
+    const lerpSpeed = 0.35; // Maximum mechanical tracking acceleration velocity
 
+    let isSystemActive = false; 
     let isMoving = false;
-    let fallbackClassification = "Analyzing environment...";
+    let primaryLabel = "IDENTIFYING TARGET...";
     
-    // Smarter Anti-Spam: Dynamic Throttle
     let lastCaptureTime = 0;
-    const minCaptureInterval = 400; // Allows up to 2.5 precise shots a second if movement shifts drastically
+    const minCaptureInterval = 500; // Allows immediate responsive snaps on sequential movements
 
     async function spinUpAI() {
         statusMessage.textContent = "LOADING NEURAL MATRIX...";
         try {
             netModel = await cocoSsd.load();
-            statusMessage.textContent = "READY SYSTEM FOR INGESTION";
-            statusDot.style.backgroundColor = "var(--alert)";
+            statusMessage.textContent = "OPTICS ENGINE READY FOR INITIALIZATION";
         } catch (e) {
             statusMessage.textContent = "AI MATRIX OFFLINE";
         }
@@ -326,10 +378,40 @@
             const check = await navigator.mediaDevices.getUserMedia({ video: true });
             check.getTracks().forEach(t => t.stop()); 
             await discoverInputs();
+            toggleStateBtn.disabled = false;
+            triggerSystemStart();
         } catch (e) {
             statusMessage.textContent = "ACCESS DENIED";
         }
     });
+
+    toggleStateBtn.addEventListener('click', () => {
+        if (isSystemActive) {
+            triggerSystemStop();
+        } else {
+            triggerSystemStart();
+        }
+    });
+
+    function triggerSystemStart() {
+        isSystemActive = true;
+        toggleStateBtn.textContent = "STOP ENGINE";
+        toggleStateBtn.className = "btn-toggle running";
+        statusMessage.textContent = "MONITOR ACTIVE - ENGINE INFERENCE ARMED";
+        statusDot.className = "pulse-dot active";
+    }
+
+    function triggerSystemStop() {
+        isSystemActive = false;
+        toggleStateBtn.textContent = "START ENGINE";
+        toggleStateBtn.className = "btn-toggle";
+        statusMessage.textContent = "SYSTEM DEACTIVATED - THRESHOLD PAUSED";
+        statusDot.className = "pulse-dot";
+        statusDot.style.backgroundColor = "#ff3b3b";
+        // Clear bracket display visually on stop
+        targetW = 0; targetH = 0;
+        context.clearRect(0, 0, overlay.width, overlay.height);
+    }
 
     async function discoverInputs() {
         const devices = await navigator.mediaDevices.enumerateDevices();
@@ -340,7 +422,7 @@
         videoDevices.forEach((cam, index) => {
             const opt = document.createElement('option');
             opt.value = cam.deviceId;
-            opt.text = cam.label || `OPTICAL MATRIX CH-${index + 1}`;
+            opt.text = cam.label || `OPTICAL DEVICE CH-${index + 1}`;
             selector.appendChild(opt);
         });
         bindCameraStream(videoDevices[0].deviceId);
@@ -355,17 +437,13 @@
         video.onloadedmetadata = () => {
             overlay.width = video.videoWidth;
             overlay.height = video.videoHeight;
-            statusMessage.textContent = "MONITOR ACTIVE - FLOW ANALYSIS ENGAGED";
-            statusDot.className = "pulse-dot active";
             executeHighPrecisionPipeline();
         };
     }
 
-    // High Precision Matrix Pipeline
     function executeHighPrecisionPipeline() {
         if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
-        // Low latency downsampler for motion vector calculation
         const lowResW = 240; 
         const lowResH = 135;
         const lowResCanvas = document.createElement('canvas');
@@ -373,19 +451,15 @@
         lowResCanvas.height = lowResH;
         const lowResCtx = lowResCanvas.getContext('2d');
 
-        // Parallel classification network thread (does not drag video framerate)
-        let primaryLabel = "TRACKING TARGET";
-        let secondaryConfidence = "";
-        
+        // Continuous fast identification loops
         setInterval(async () => {
-            if (!video.paused && video.readyState >= 2 && netModel && isMoving) {
+            if (isSystemActive && !video.paused && video.readyState >= 2 && netModel && isMoving) {
                 const results = await netModel.detect(video);
                 if (results.length > 0) {
                     primaryLabel = results[0].class.toUpperCase();
-                    secondaryConfidence = `${Math.round(results[0].score * 100)}% Match Precision`;
                 }
             }
-        }, 180);
+        }, 200);
 
         function track() {
             if (video.paused || video.ended) {
@@ -395,6 +469,13 @@
 
             lowResCtx.drawImage(video, 0, 0, lowResW, lowResH);
             const currentFrame = lowResCtx.getImageData(0, 0, lowResW, lowResH);
+
+            if (!isSystemActive) {
+                prevFrameData = currentFrame;
+                animationFrameId = requestAnimationFrame(track);
+                return;
+            }
+
             context.clearRect(0, 0, overlay.width, overlay.height);
 
             let flowDetected = false;
@@ -403,18 +484,15 @@
             let motionDensity = 0;
 
             if (prevFrameData) {
-                // High precision macro scan loop
-                for (let y = 0; y < lowResH; y += 2) {
-                    for (let x = 0; x < lowResW; x += 2) {
+                for (let y = 0; y < lowResH; y++) {
+                    for (let x = 0; x < lowResW; x++) {
                         const idx = (y * lowResW + x) * 4;
                         
-                        // Delta measurement across full RGB channels
                         const dR = Math.abs(currentFrame.data[idx] - prevFrameData.data[idx]);
                         const dG = Math.abs(currentFrame.data[idx+1] - prevFrameData.data[idx+1]);
                         const dB = Math.abs(currentFrame.data[idx+2] - prevFrameData.data[idx+2]);
                         
-                        // Low threshold ensures slow creeping movements are successfully indexed
-                        if ((dR + dG + dB) / 3 > 15) { 
+                        if ((dR + dG + dB) / 3 > 25) { // Sharp delta threshold limits phantom frames
                             motionDensity++;
                             if (x < rawMinX) rawMinX = x;
                             if (x > rawMaxX) rawMaxX = x;
@@ -424,8 +502,8 @@
                     }
                 }
 
-                // Minimum density barrier filters background camera noise floor artifacts
-                if (motionDensity > 8) { 
+                // Strict movement filter: prevents snapshot firing when motion density equals absolute zero
+                if (motionDensity > 12) { 
                     flowDetected = true;
                 }
             }
@@ -434,55 +512,48 @@
                 const mapX = overlay.width / lowResW;
                 const mapY = overlay.height / lowResH;
                 
-                // Generates fluid elastic target frames around movement zone
-                const borderBuffer = 30;
-                targetX = Math.max(0, (rawMinX * mapX) - borderBuffer);
-                targetY = Math.max(0, (rawMinY * mapY) - borderBuffer);
-                targetW = Math.min(overlay.width - targetX, ((rawMaxX - rawMinX) * mapX) + (borderBuffer * 2));
-                targetH = Math.min(overlay.height - targetY, ((rawMaxY - rawMinY) * mapY) + (borderBuffer * 2));
+                // Pinpoints the geometric crosshair bounds directly onto shifting target coordinates
+                targetX = rawMinX * mapX;
+                targetY = rawMinY * mapY;
+                targetW = (rawMaxX - rawMinX) * mapX;
+                targetH = (rawMaxY - rawMinY) * mapY;
 
                 isMoving = true;
-                statusMessage.textContent = "TARGET VECTOR MOVEMENT RECORDED";
+                statusMessage.textContent = "INTRUSION MOVEMENT DETECTED";
 
-                // Immediate snapshot ignition engine
                 const now = performance.now();
                 if (now - lastCaptureTime > minCaptureInterval) {
-                    triggerInstantCapture(primaryLabel, secondaryConfidence);
+                    triggerInstantCapture(primaryLabel);
                     lastCaptureTime = now;
                 }
             } else {
                 isMoving = false;
-                // Gracefully collapse boundaries to perfect crosshair center when movement settles
-                targetW = 0; targetH = 0;
+                if(statusMessage.textContent !== "SYSTEM DEACTIVATED - THRESHOLD PAUSED") {
+                     statusMessage.textContent = "MONITOR ACTIVE - ENGINE INFERENCE ARMED";
+                }
+                targetW = 0; targetH = 0; // Collapses crosshairs cleanly to zero coordinates
+                primaryLabel = "IDENTIFYING TARGET...";
             }
 
-            // High velocity linear interpolation (lerp) calculations
             currentX += (targetX - currentX) * lerpSpeed;
             currentY += (targetY - currentY) * lerpSpeed;
             currentW += (targetW - currentW) * lerpSpeed;
             currentH += (targetH - currentH) * lerpSpeed;
 
-            // Reticle rendering engine
-            if (currentW > 4) {
+            // Reticle Render
+            if (currentW > 4 && isSystemActive) {
                 context.strokeStyle = 'var(--success)';
                 context.lineWidth = 2;
-                
-                // Draw responsive geometric HUD corners
-                const bracketSize = Math.min(25, currentW * 0.25);
+                const bracketSize = Math.min(20, currentW * 0.25);
                 
                 context.beginPath(); context.moveTo(currentX, currentY + bracketSize); context.lineTo(currentX, currentY); context.lineTo(currentX + bracketSize, currentY); context.stroke();
                 context.beginPath(); context.moveTo(currentX + currentW, currentY + bracketSize); context.lineTo(currentX + currentW, currentY); context.lineTo(currentX + currentW - bracketSize, currentY); context.stroke();
                 context.beginPath(); context.moveTo(currentX, currentY + currentH - bracketSize); context.lineTo(currentX, currentY + currentH); context.lineTo(currentX + bracketSize, currentY + currentH); context.stroke();
                 context.beginPath(); context.moveTo(currentX + currentW, currentY + currentH - bracketSize); context.lineTo(currentX + currentW, currentY + currentH); context.lineTo(currentX + currentW - bracketSize, currentY + currentH); context.stroke();
 
-                // Dynamic data tag placement strings
                 context.fillStyle = 'var(--success)';
                 context.font = '600 12px system-ui';
-                context.fillText(`LOCK: ${primaryLabel}`, currentX + 6, currentY - 22);
-                if(secondaryConfidence) {
-                    context.fillStyle = 'var(--alert)';
-                    context.fillText(secondaryConfidence, currentX + 6, currentY - 6);
-                }
+                context.fillText(`TARGET FOCUS // ${primaryLabel}`, currentX + 4, currentY - 10);
             }
 
             prevFrameData = currentFrame;
@@ -492,7 +563,7 @@
         animationFrameId = requestAnimationFrame(track);
     }
 
-    function triggerInstantCapture(labelText, confidenceText) {
+    function triggerInstantCapture(labelText) {
         activeLogCount++;
         logCount.textContent = `${activeLogCount} CAPTURES`;
 
@@ -502,27 +573,39 @@
         const snapCtx = snappit.getContext('2d');
         snapCtx.drawImage(video, 0, 0, snappit.width, snappit.height);
         
-        const outputUri = snappit.toDataURL('image/jpeg', 0.85);
+        const outputUri = snappit.toDataURL('image/jpeg', 0.90);
         const logTime = new Date().toLocaleTimeString();
         
         const card = document.createElement('div');
         card.className = 'capture-card';
 
         card.innerHTML = `
-            <img src="${outputUri}" alt="System Frame Log" />
+            <img src="${outputUri}" alt="Snapshot ${activeLogCount}" onclick="openLightbox('${outputUri}', 'MATRIX_LOG_${9000 + activeLogCount} [${logTime}] - MATCH: ${labelText}')" />
             <div class="meta-line-main">
-                <div class="capture-name">MATRIX_FLOW_${8000 + activeLogCount}</div>
+                <div class="capture-name">MATRIX_LOG_${9000 + activeLogCount}</div>
                 <div class="capture-time">[${logTime}]</div>
             </div>
             <div class="intelligence-box">
-                CORE ANALYSIS: <span>${labelText}</span><br>
-                METRIC STATUS: <span>${confidenceText || 'System Verifying Context...'}</span>
+                TARGET MATCHED: <span>${labelText}</span>
             </div>
-            <a href="${outputUri}" download="Matrix_HighPrecision_${8000 + activeLogCount}.jpg" class="download-btn">EXTRACT DATA FRAME</a>
         `;
         
         captureContainer.insertBefore(card, captureContainer.firstChild);
     }
+
+    // Lightbox / Image Opener Logic Functions
+    function openLightbox(src, text) {
+        lightboxImg.src = src;
+        lightboxCaption.textContent = text;
+        lightbox.style.display = 'flex';
+    }
+
+    lightbox.addEventListener('click', (e) => {
+        if(e.target === lightbox || e.target === lightboxClose || e.target.classList.contains('modal-wrapper')) {
+            lightbox.style.display = 'none';
+            lightboxImg.src = "";
+        }
+    });
 
     selector.addEventListener('change', (e) => {
         if (e.target.value) bindCameraStream(e.target.value);
