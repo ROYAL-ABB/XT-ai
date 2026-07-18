@@ -3,10 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xt-ai // Live Cam & Biometric Suite</title>
-    <!-- Core Computer Vision Dependency Pipeline -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/tracking-min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/data/face-min.js"></script>
+    <title>xt-ai // Live Motion & Identity Suite</title>
     <style>
         :root {
             --bg: #090d16;
@@ -89,7 +86,7 @@
             object-fit: contain;
         }
 
-        canvas#faceOverlay {
+        canvas#motionOverlay {
             position: absolute;
             top: 0;
             left: 0;
@@ -103,6 +100,7 @@
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
+            align-items: center;
         }
 
         select, button {
@@ -124,6 +122,18 @@
 
         .btn-blue { background: var(--accent); color: white; }
         .btn-warn { background: var(--warn); color: white; }
+
+        .sensitivity-panel {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background: #1e293b;
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: 1px solid #334155;
+        }
 
         .sidebar-right {
             max-height: 75vh;
@@ -165,7 +175,7 @@
             border-radius: 8px;
             border: 1px solid #2e3f59;
             cursor: pointer;
-            transition: transform 0.2s check, border-color 0.2s ease;
+            transition: transform 0.2s ease, border-color 0.2s ease;
             animation: slideIn 0.3s ease-out;
         }
 
@@ -207,7 +217,6 @@
         .msg-warn { background: rgba(217, 119, 6, 0.15); border: 1px solid var(--warn); color: #fde68a; }
         .msg-error { background: rgba(220, 38, 38, 0.15); border: 1px solid var(--error); color: #fca5a5; }
 
-        /* Full Screen Lightbox Modal Layer Layout */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -281,36 +290,38 @@
 
 <div class="app-container">
     <header>
-        <h1>xt-ai // Biometric Processing Terminal</h1>
-        <p>Real-time autonomous face tracking & logging utility matrix.</p>
+        <h1>xt-ai // Real-Time Motion Matrix</h1>
+        <p>Autonomous pixel-variance tracking and event logging workstation.</p>
     </header>
 
     <div id="statusAlert" class="status-msg"></div>
 
-    <!-- Left Workstation Container -->
     <div class="panel workspace-left">
         <div class="viewer-box">
             <video id="viewscreen" autoplay playsinline muted></video>
-            <canvas id="faceOverlay"></canvas>
+            <canvas id="motionOverlay"></canvas>
         </div>
         <div class="controls-row">
             <button class="btn-blue" id="initBtn">Scan Channels</button>
             <select id="selector"><option value="">Awaiting Hardware Scan...</option></select>
             <button class="btn-warn" id="bypassBtn" style="display:none;">Force Default Cam</button>
+            
+            <div class="sensitivity-panel">
+                <label for="thresholdSlider">Sensitivity Threshold</label>
+                <input type="range" id="thresholdSlider" min="10" max="60" value="30" style="cursor:pointer; accent-color:var(--accent);">
+            </div>
         </div>
     </div>
 
-    <!-- Right Face Logger Sidebar Panel -->
     <div class="panel sidebar-right">
         <h3 class="sidebar-title">
-            Identity Capture Log 
+            Activity Event Log 
             <span class="counter-badge" id="logCount">0 Logs</span>
         </h3>
         <div class="capture-list" id="captureContainer"></div>
     </div>
 </div>
 
-<!-- Lightbox Modal DOM Node -->
 <div class="modal-overlay" id="imageModal">
     <div class="modal-content">
         <div class="modal-close-btn" id="modalClose">✕</div>
@@ -324,7 +335,7 @@
 
 <script>
     const video = document.getElementById('viewscreen');
-    const overlay = document.getElementById('faceOverlay');
+    const overlay = document.getElementById('motionOverlay');
     const context = overlay.getContext('2d');
     
     const initBtn = document.getElementById('initBtn');
@@ -333,8 +344,8 @@
     const statusAlert = document.getElementById('statusAlert');
     const captureContainer = document.getElementById('captureContainer');
     const logCount = document.getElementById('logCount');
+    const thresholdSlider = document.getElementById('thresholdSlider');
 
-    // Modal references
     const imageModal = document.getElementById('imageModal');
     const modalClose = document.getElementById('modalClose');
     const modalTargetImg = document.getElementById('modalTargetImg');
@@ -342,13 +353,15 @@
     const modalTargetTime = document.getElementById('modalTargetTime');
 
     let localStream = null;
-    let faceTracker = null;
-    let trackerTask = null;
+    let animationFrameId = null;
     
+    // Core Computer Vision Vector Variables
+    let prevFrameData = null;
     let lastCaptureTime = 0;
     const CAPTURE_COOLDOWN_MS = 3000; 
     let activeLogCount = 0;
 
+    // Synthesized Audio Trigger Architecture
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playShutterSound() {
         const osc = audioCtx.createOscillator();
@@ -356,12 +369,12 @@
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         osc.type = 'triangle';
-        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+        osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
         osc.start();
-        osc.stop(audioCtx.currentTime + 0.16);
+        osc.stop(audioCtx.currentTime + 0.13);
     }
 
     initBtn.addEventListener('click', async () => {
@@ -427,7 +440,7 @@
                 bindStreamToUI(stream);
             } catch (secondError) {
                 bypassBtn.style.display = "inline-block";
-                showAlert("error", "Hardware Critical: Camera reports busy. Reset USB cable or click 'Force Default Cam'.");
+                showAlert("error", "Hardware Critical: Camera busy. Click 'Force Default Cam'.");
             }
         }
     }
@@ -440,42 +453,82 @@
         video.onloadedmetadata = () => {
             overlay.width = video.videoWidth;
             overlay.height = video.videoHeight;
-            initFaceTrackingPipeline();
+            startMotionDetectionPipeline();
         };
     }
 
-    function initFaceTrackingPipeline() {
-        if (trackerTask) { trackerTask.stop(); }
+    // Core Frame Differential Loop (Runs ~30-60FPS bare metal canvas comparison)
+    function startMotionDetectionPipeline() {
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+        }
 
-        faceTracker = new tracking.ObjectTracker('face');
-        faceTracker.setInitialScale(4);
-        faceTracker.setStepSize(2);
-        faceTracker.setEdgesDensity(0.1);
+        // Dedicated low-res hidden canvas for processing pixel delta to keep performance high
+        const processWidth = 200;
+        const processHeight = 150;
+        const processCanvas = document.createElement('canvas');
+        processCanvas.width = processWidth;
+        processCanvas.height = processHeight;
+        const processCtx = processCanvas.getContext('2d');
 
-        faceTracker.on('track', function(event) {
+        function scanFrame() {
+            if (video.paused || video.ended) {
+                animationFrameId = requestAnimationFrame(scanFrame);
+                return;
+            }
+
+            // 1. Draw live feed snippet downsampled onto process surface
+            processCtx.drawImage(video, 0, 0, processWidth, processHeight);
+            const currentFrameData = processCtx.getImageData(0, 0, processWidth, processHeight);
+            
             context.clearRect(0, 0, overlay.width, overlay.height);
-            if (event.data.length === 0) return;
 
-            event.data.forEach(function(rect) {
-                context.strokeStyle = '#2563eb';
-                context.lineWidth = 3;
-                context.strokeRect(rect.x, rect.y, rect.width, rect.height);
+            if (prevFrameData) {
+                let changedPixelsCount = 0;
                 
-                context.fillStyle = 'rgba(37, 99, 235, 0.2)';
-                context.fillRect(rect.x, rect.y, rect.width, rect.height);
+                // Get sensitivity boundary threshold value out of slider input invertedly
+                const threshold = parseInt(thresholdSlider.value);
 
-                const now = Date.now();
-                if (now - lastCaptureTime > CAPTURE_COOLDOWN_MS) {
-                    lastCaptureTime = now;
-                    captureIdentityLog(rect);
+                // Analyze frame buffer array matrix channels (R, G, B, A)
+                for (let i = 0; i < currentFrameData.data.length; i += 4) {
+                    const rDiff = Math.abs(currentFrameData.data[i] - prevFrameData.data[i]);
+                    const gDiff = Math.abs(currentFrameData.data[i+1] - prevFrameData.data[i+1]);
+                    const bDiff = Math.abs(currentFrameData.data[i+2] - prevFrameData.data[i+2]);
+                    
+                    // If visual delta shifts past baseline configuration threshold
+                    if ((rDiff + gDiff + bDiff) / 3 > threshold) {
+                        changedPixelsCount++;
+                    }
                 }
-            });
-        });
 
-        trackerTask = tracking.track('#viewscreen', faceTracker);
+                // If massive visual movement cluster detected across over 2.5% of the frame panel space
+                if (changedPixelsCount > (processWidth * processHeight) * 0.025) {
+                    // Draw visual target tracking boundary border alert indicator
+                    context.strokeStyle = 'rgba(217, 119, 6, 0.7)';
+                    context.lineWidth = 6;
+                    context.strokeRect(10, 10, overlay.width - 20, overlay.height - 20);
+                    
+                    context.fillStyle = 'rgba(217, 119, 6, 0.05)';
+                    context.fillRect(10, 10, overlay.width - 20, overlay.height - 20);
+
+                    // Automate snapshot snapshot process loop
+                    const now = Date.now();
+                    if (now - lastCaptureTime > CAPTURE_COOLDOWN_MS) {
+                        lastCaptureTime = now;
+                        captureMotionEvent();
+                    }
+                }
+            }
+
+            // Deep copy raw frame snapshot array data to cache reference vector
+            prevFrameData = currentFrameData;
+            animationFrameId = requestAnimationFrame(scanFrame);
+        }
+
+        animationFrameId = requestAnimationFrame(scanFrame);
     }
 
-    function captureIdentityLog(rect) {
+    function captureMotionEvent() {
         const snapCanvas = document.createElement('canvas');
         snapCanvas.width = video.videoWidth;
         snapCanvas.height = video.videoHeight;
@@ -487,36 +540,35 @@
         playShutterSound();
         
         activeLogCount++;
-        logCount.textContent = `${activeLogCount} Logs`;
+        logCount.textContent = `${activeLogCount} Events`;
 
         const timestamp = new Date().toLocaleTimeString();
-        const subjectName = `Subject #${1000 + activeLogCount}`;
-        const timeText = `Detected at ${timestamp}`;
+        const eventTitle = `Motion Event #${2000 + activeLogCount}`;
+        const timeText = `Logged at ${timestamp}`;
         
         const card = document.createElement('div');
         card.className = 'capture-card';
+        card.style.borderLeft = '4px solid var(--warn)';
         card.innerHTML = `
-            <img src="${dataUrl}" alt="Face Snapshot Log" />
+            <img src="${dataUrl}" alt="Motion Tracker Log" />
             <div class="capture-details">
-                <div class="capture-name">${subjectName}</div>
+                <div class="capture-name" style="color:#f59e0b;">${eventTitle}</div>
                 <div class="capture-time">${timeText}</div>
             </div>
         `;
         
-        // Modal Event Hook Injection
         card.addEventListener('click', () => {
             modalTargetImg.src = dataUrl;
-            modalTargetName.textContent = subjectName;
+            modalTargetName.textContent = eventTitle;
+            modalTargetName.style.color = '#f59e0b';
             modalTargetTime.textContent = timeText;
             imageModal.style.display = 'flex';
-            // Simple micro-task buffer delay for rendering CSS transitions smoothly
             setTimeout(() => imageModal.classList.add('active'), 10);
         });
         
         captureContainer.insertBefore(card, captureContainer.firstChild);
     }
 
-    // Modal Control Routines
     function closeModal() {
         imageModal.classList.remove('active');
         setTimeout(() => { imageModal.style.display = 'none'; }, 300);
