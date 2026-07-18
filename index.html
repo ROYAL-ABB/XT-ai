@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SYS.MATRIX // AI Vision Analytics</title>
-    <!-- Importing TensorFlow.js and COCO-SSD Object Recognition Engine -->
+    <title>SYS.MATRIX // Real-Time AI Capture</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <style>
@@ -249,30 +248,30 @@
 
 <div class="app-container">
     <header>
-        <h1>SYS.MATRIX // NEURAL SNAPSHOT SUITE</h1>
-        <p>Object tracking, color recognition, and fluid interpolation vectors powered by TensorFlow AI.</p>
+        <h1>SYS.MATRIX // INTRUSION SNAPSHOT TRIGGER</h1>
+        <p>Instantaneous capture on motion start. Object classification and color extraction occur on the fly.</p>
     </header>
 
     <div class="panel workspace-left">
         <div class="viewer-box">
             <div class="system-status-badge">
                 <div class="pulse-dot"></div>
-                <span id="statusMessage">CORE INITIALIZING...</span>
+                <span id="statusMessage">NEURAL BASE INIT...</span>
             </div>
             
             <video id="viewscreen" autoplay playsinline muted></video>
             <canvas id="motionOverlay"></canvas>
         </div>
         <div class="controls-row">
-            <button class="btn-blue" id="initBtn">MOUNT AI PERIPHERALS</button>
-            <select id="selector"><option value="">WAITING ON HARDWARE...</option></select>
+            <button class="btn-blue" id="initBtn">BOOT OPTICS</button>
+            <select id="selector"><option value="">WAITING...</option></select>
         </div>
     </div>
 
     <div class="panel sidebar-right">
         <h3 class="sidebar-title">
             CAPTURED ARCHIVE
-            <span class="counter-badge" id="logCount">0 REELS</span>
+            <span class="counter-badge" id="logCount">0 IMAGES</span>
         </h3>
         <div class="capture-list" id="captureContainer"></div>
     </div>
@@ -295,35 +294,34 @@
     let activeLogCount = 0;
     let netModel = null;
     
-    // Smooth Interpolation Variables
+    // Smooth Brackets Setup
     let currentX = 0, currentY = 0, currentW = 0, currentH = 0;
     let targetX = 0, targetY = 0, targetW = 0, targetH = 0;
-    const interpolationFactor = 0.15; // Lower values = smoother, higher values = faster movement
+    const interpolationFactor = 0.18;
 
     let motionDetectedActive = false;
     let frameMotionResetTimeout = null;
-    let currentObjectClassification = "Unknown Subject";
-    let currentObjectChroma = "Analyzing hue...";
+    let currentObjectClassification = "SCANNING OBJECT...";
+    let currentObjectChroma = "Analyzing palette...";
+    
+    // Safety lock variables to prevent rapid multi-firing while an object passes through
+    let isCaptureLocked = false;
+    const lockDurationMs = 1500; 
 
-    // Color Analytics Engine
     function extractChromaProfile(r, g, b) {
-        if (r > 200 && g > 200 && b > 200) return "White/Bright Reflective";
-        if (r < 60 && g < 60 && b < 60) return "Black/Dark Shade";
-        
+        if (r > 200 && g > 200 && b > 200) return "White/Bright Attire";
+        if (r < 65 && g < 65 && b < 65) return "Black/Dark Attire";
         let max = Math.max(r, g, b);
-        if (max === r) return (r - g > 40 && r - b > 40) ? "Red/Warm Spectrum" : "Orange/Brown Tone";
-        if (max === g) return "Green Spectrum";
-        if (max === b) return "Blue/Cold Palette";
-        
-        if (Math.abs(r - g) < 20 && r > 120) return "Yellow/Amber Accent";
-        return "Mixed Neutral Blend";
+        if (max === r) return (r - g > 35) ? "Red/Warm Palette" : "Orange/Brown Shade";
+        if (max === g) return "Green Palette";
+        if (max === b) return "Blue/Denim Tone";
+        return "Mixed Palette";
     }
 
-    // Load AI Model on Start
     async function loadNeuralArchitecture() {
-        statusMessage.textContent = "LOADING NEURAL MODEL...";
+        statusMessage.textContent = "COMPILING TF-MODELS...";
         netModel = await cocoSsd.load();
-        statusMessage.textContent = "AI LOGIC ONLINE. MOUNT CAMERA.";
+        statusMessage.textContent = "AI LOGIC ONLINE. BOOT OPTICS.";
     }
     loadNeuralArchitecture();
 
@@ -333,7 +331,7 @@
             check.getTracks().forEach(t => t.stop()); 
             await findVideoChannels();
         } catch (e) {
-            statusMessage.textContent = "CAMERA ACCESS DENIED";
+            statusMessage.textContent = "PERIPHERAL ERROR";
         }
     });
 
@@ -346,7 +344,7 @@
         videoDevices.forEach((cam, index) => {
             const node = document.createElement('option');
             node.value = cam.deviceId;
-            node.text = cam.label || `STREAM DEVICE-${index + 1}`;
+            node.text = cam.label || `HARDWARE M-${index + 1}`;
             selector.appendChild(node);
         });
         executeRescueStream(videoDevices[0].deviceId);
@@ -359,7 +357,7 @@
         video.onloadedmetadata = () => {
             overlay.width = video.videoWidth;
             overlay.height = video.videoHeight;
-            statusMessage.textContent = "SYSTEM LIVE // SCANNING";
+            statusMessage.textContent = "ACTIVE MONITORING LINK ONLINE";
             startVisionPipeline();
         };
     }
@@ -374,18 +372,17 @@
         processCanvas.height = processHeight;
         const processCtx = processCanvas.getContext('2d');
 
-        // Periodically run AI object classification inside the canvas stream
+        // Continuous fast-polling classification loop
         setInterval(async () => {
-            if (!video.paused && video.readyState >= 2 && netModel && motionDetectedActive) {
+            if (!video.paused && video.readyState >= 2 && netModel) {
                 const predictions = await netModel.detect(video);
                 if (predictions.length > 0) {
-                    // Grab top confidence object
                     currentObjectClassification = predictions[0].class.toUpperCase();
-                } else {
-                    currentObjectClassification = "OBJECT UNKNOWN";
+                } else if (!motionDetectedActive) {
+                    currentObjectClassification = "READY / TRACKING";
                 }
             }
-        }, 400);
+        }, 250);
 
         function processFrameLoop() {
             if (video.paused || video.ended) {
@@ -411,7 +408,7 @@
                                       Math.abs(currentFrameData.data[i+1] - prevFrameData.data[i+1]) +
                                       Math.abs(currentFrameData.data[i+2] - prevFrameData.data[i+2])) / 3;
                         
-                        if (diff > 25) { // Sensitivity threshold
+                        if (diff > 22) { // Motion sensitivity setting
                             changedCount++;
                             sumR += currentFrameData.data[i];
                             sumG += currentFrameData.data[i+1];
@@ -425,7 +422,7 @@
                     }
                 }
 
-                if (changedCount > 12) { 
+                if (changedCount > 10) { 
                     hasMotion = true;
                     let avgR = Math.round(sumR / changedCount);
                     let avgG = Math.round(sumG / changedCount);
@@ -444,30 +441,33 @@
                 targetW = Math.min(overlay.width - targetX, ((maxX - minX) * scaleX) + (padding * 2));
                 targetH = Math.min(overlay.height - targetY, ((maxY - minY) * scaleY) + (padding * 2));
 
+                // NEW: Triggers instantly at the very first moment movement is detected
                 if (!motionDetectedActive) {
                     motionDetectedActive = true;
-                    statusMessage.textContent = "LOCKING SCENE TARGET...";
+                    statusMessage.textContent = "INTRUSION VECTOR ALERT";
+                    
+                    if (!isCaptureLocked) {
+                        takeTelemetrySnapshot();
+                    }
                 }
                 clearTimeout(frameMotionResetTimeout);
+                frameMotionResetTimeout = null;
             } else {
                 if (motionDetectedActive && !frameMotionResetTimeout) {
-                    // Capture snapshot instantly when motion ceases completely
                     frameMotionResetTimeout = setTimeout(() => {
-                        takeTelemetrySnapshot();
                         motionDetectedActive = false;
-                        statusMessage.textContent = "SYSTEM LIVE // SCANNING";
-                        targetW = 0; targetH = 0; // Contract brackets
-                    }, 400); 
+                        statusMessage.textContent = "ACTIVE MONITORING LINK ONLINE";
+                        targetW = 0; targetH = 0; // Smoothly close crosshair brackets
+                    }, 500); 
                 }
             }
 
-            // Smooth Dampening Bounding Interpolation
+            // Interpolation engine for sleek bracket movement
             currentX += (targetX - currentX) * interpolationFactor;
             currentY += (targetY - currentY) * interpolationFactor;
             currentW += (targetW - currentW) * interpolationFactor;
             currentH += (targetH - currentH) * interpolationFactor;
 
-            // Render HUD target brackets if dimensions exist
             if (currentW > 5) {
                 context.strokeStyle = 'var(--success)';
                 context.lineWidth = 2;
@@ -475,13 +475,13 @@
                 
                 context.beginPath(); context.moveTo(currentX, currentY + len); context.lineTo(currentX, currentY); context.lineTo(currentX + len, currentY); context.stroke();
                 context.beginPath(); context.moveTo(currentX + currentW, currentY + len); context.lineTo(currentX + currentW, currentY); context.lineTo(currentX + currentW - len, currentY); context.stroke();
-                context.beginPath(); context.moveTo(currentX, currentY + currentH - len); context.lineTo(currentX, currentY + currentH); context.lineTo(currentX + len, currentY + currentH); context.stroke();
+                context.beginPath(); context.moveTo(currentX, currentY + currentH - len); context.lineTo(currentX, currentY + currentH); context.lineTo(currentX + len, currentY + currentH); stroke();
                 context.beginPath(); context.moveTo(currentX + currentW, currentY + currentH - len); context.lineTo(currentX + currentW, currentY + currentH); context.lineTo(currentX + currentW - len, currentY + currentH); context.stroke();
 
                 context.fillStyle = 'var(--success)';
                 context.font = 'bold 11px monospace';
-                context.fillText(`AI ID: ${currentObjectClassification}`, currentX + 4, currentY - 24);
-                context.fillText(`CHROMA: ${currentObjectChroma}`, currentX + 4, currentY - 8);
+                context.fillText(`AI MATCH: ${currentObjectClassification}`, currentX + 4, currentY - 24);
+                context.fillText(`SPECTRUM: ${currentObjectChroma}`, currentX + 4, currentY - 8);
             }
 
             prevFrameData = currentFrameData;
@@ -492,10 +492,10 @@
     }
 
     function takeTelemetrySnapshot() {
+        isCaptureLocked = true; // Engage anti-spam throttle loop
         activeLogCount++;
-        logCount.textContent = `${activeLogCount} REELS`;
+        logCount.textContent = `${activeLogCount} IMAGES`;
 
-        // Draw current video frame onto an invisible offscreen canvas to grab the image file
         const captureCanvas = document.createElement('canvas');
         captureCanvas.width = video.videoWidth;
         captureCanvas.height = video.videoHeight;
@@ -508,22 +508,31 @@
         const card = document.createElement('div');
         card.className = 'capture-card';
         
+        // Caches local text states immediately for historic snapshot preservation
+        const snapshotClass = currentObjectClassification;
+        const snapshotChroma = currentObjectChroma;
+
         card.innerHTML = `
             <img src="${dataUrl}" alt="Secured Telemetry Snapshot" />
             <div class="capture-details">
                 <div class="meta-line-main">
-                    <div class="capture-name">SNAP_LOG_${7000 + activeLogCount}</div>
+                    <div class="capture-name">LIVE_SNAP_${6000 + activeLogCount}</div>
                     <div class="capture-time">[${timestamp}]</div>
                 </div>
                 <div class="intelligence-box">
-                    IDENTIFIED: <span>${currentObjectClassification}</span><br>
-                    DOMINANT HUE: <span>${currentObjectChroma}</span>
+                    DETECTED TARGET: <span>${snapshotClass}</span><br>
+                    VISUAL METRIC: <span>${snapshotChroma}</span>
                 </div>
-                <a href="${dataUrl}" download="Matrix_Snap_${7000 + activeLogCount}.jpg" class="download-btn">DOWNLOAD SNAPSHOT</a>
+                <a href="${dataUrl}" download="Matrix_Instant_Snap_${6000 + activeLogCount}.jpg" class="download-btn">DOWNLOAD</a>
             </div>
         `;
         
         captureContainer.insertBefore(card, captureContainer.firstChild);
+
+        // Clear lock state after delay threshold to await next dynamic event entry
+        setTimeout(() => {
+            isCaptureLocked = false;
+        }, lockDurationMs);
     }
 
     selector.addEventListener('change', (e) => {
