@@ -1,1003 +1,1428 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>WHO THE HELL AM I?</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ONE LIFE — $0 TO ???</title>
 
 <style>
-:root{
-  --bg:#070707;
-  --panel:#111;
-  --panel2:#171717;
-  --line:#292929;
-  --text:#f4f4f4;
-  --muted:#888;
-  --accent:#fff;
-  --danger:#ff3b3b;
-  --good:#52d273;
-}
 *{box-sizing:border-box}
-html,body{
+:root{
+  --bg:#07090d;
+  --panel:#10141b;
+  --panel2:#171c25;
+  --line:#252c38;
+  --text:#f5f7fa;
+  --muted:#8e98a8;
+  --green:#55e18d;
+  --red:#ff6464;
+  --yellow:#ffd166;
+  --blue:#70a7ff;
+}
+body{
   margin:0;
-  width:100%;
-  height:100%;
-  background:#000;
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 80% 0,#18243a 0,transparent 35%),
+    radial-gradient(circle at 0 80%,#15201b 0,transparent 30%),
+    var(--bg);
   color:var(--text);
   font-family:Inter,Arial,sans-serif;
-  overflow:hidden;
 }
 button{font:inherit}
+button:active{transform:scale(.98)}
 .hidden{display:none!important}
 
-#game{
-  position:fixed;
-  inset:0;
-  background:
-    radial-gradient(circle at 50% 20%,#252525 0,#0b0b0b 35%,#000 80%);
+#app{
+  max-width:1500px;
+  margin:auto;
+  min-height:100vh;
 }
 
-/* CINEMATIC */
-#intro{
-  position:absolute;
-  inset:0;
-  background:#000;
-  z-index:100;
+/* TOP */
+header{
+  position:sticky;
+  top:0;
+  z-index:50;
+  background:#080b10e8;
+  backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--line);
+  padding:14px 18px;
+}
+.top{
   display:flex;
-  justify-content:center;
   align-items:center;
-  text-align:center;
-  padding:30px;
+  justify-content:space-between;
+  gap:15px;
 }
-#introText{
-  max-width:800px;
-  font-size:clamp(20px,4vw,38px);
-  font-weight:700;
-  line-height:1.5;
-  animation:fade 1s;
+.logo{
+  font-weight:1000;
+  letter-spacing:2px;
 }
-@keyframes fade{
-  from{opacity:0}
-  to{opacity:1}
-}
-
-/* MAIN WORLD */
-#world{
-  position:absolute;
-  inset:0;
-  background:
-    linear-gradient(#0003,#0009),
-    radial-gradient(circle at 50% 15%,#514838,#1a1815 40%,#080808);
-}
-#roomTitle{
-  position:absolute;
-  top:35px;
-  left:40px;
-}
-#roomTitle h1{
-  margin:0;
-  font-size:15px;
-  letter-spacing:5px;
-}
-#roomTitle p{
-  color:#aaa;
-  margin-top:8px;
-}
-
-#scene{
-  position:absolute;
-  left:50%;
-  top:48%;
-  transform:translate(-50%,-50%);
-  width:min(900px,90%);
-  height:55%;
-  border:1px solid #ffffff14;
-  border-radius:25px;
-  background:
-    linear-gradient(130deg,#201c18,#0c0c0c 60%);
-  box-shadow:0 30px 100px #000;
-  overflow:hidden;
-}
-
-.window{
-  position:absolute;
-  width:45%;
-  height:65%;
-  left:8%;
-  top:8%;
-  background:linear-gradient(#101b26,#29231e);
-  border:12px solid #111;
-}
-.window:after{
-  content:"CITY • 04:17 AM";
-  position:absolute;
-  bottom:15px;
-  left:15px;
-  font-size:10px;
-  letter-spacing:3px;
-  color:#ffffff55;
-}
-
-.bed{
-  position:absolute;
-  width:50%;
-  height:27%;
-  right:5%;
-  bottom:12%;
-  background:linear-gradient(145deg,#38332c,#171717);
-  transform:skew(-5deg);
-  box-shadow:0 20px 40px #000;
-}
-.table{
-  position:absolute;
-  left:18%;
-  bottom:13%;
-  width:160px;
-  height:70px;
-  background:#191714;
-}
-.phoneObject{
-  position:absolute;
-  left:21%;
-  bottom:24%;
-  width:45px;
-  height:85px;
-  border-radius:10px;
-  background:#050505;
-  border:2px solid #555;
-  box-shadow:0 0 30px #fff2;
-  cursor:pointer;
-}
-.phoneObject:after{
-  content:"47";
-  position:absolute;
-  right:-10px;
-  top:-10px;
-  width:25px;
-  height:25px;
-  background:#d22;
-  border-radius:50%;
-  display:grid;
-  place-items:center;
-  font-size:11px;
-  font-weight:bold;
-}
-
-.door{
-  position:absolute;
-  right:4%;
-  top:8%;
-  width:110px;
-  height:62%;
-  background:linear-gradient(90deg,#171717,#29231e);
-  border:5px solid #080808;
-  cursor:pointer;
-}
-.door:after{
-  content:"●";
-  position:absolute;
-  left:15px;
-  top:50%;
-  color:#bda875;
-}
-
-.objectLabel{
-  position:absolute;
-  padding:7px 11px;
-  background:#000c;
-  border:1px solid #ffffff20;
-  border-radius:30px;
-  font-size:11px;
-  letter-spacing:1px;
-  pointer-events:none;
-}
-
-/* HUD */
-#hud{
-  position:absolute;
-  top:25px;
-  right:30px;
-  display:flex;
-  gap:10px;
-  z-index:20;
-}
-.hudBox{
-  padding:10px 15px;
-  border:1px solid #ffffff1d;
-  background:#0008;
-  backdrop-filter:blur(12px);
-  border-radius:12px;
+.logo span{color:var(--green)}
+.clock{
+  color:var(--muted);
   font-size:12px;
 }
-.green{color:var(--good)}
-
-/* ACTIONS */
-#actions{
-  position:absolute;
-  bottom:30px;
-  left:50%;
-  transform:translateX(-50%);
-  display:flex;
-  gap:10px;
-  z-index:30;
-}
-.action{
-  border:1px solid #ffffff25;
-  background:#101010dd;
-  color:#fff;
-  padding:14px 20px;
-  border-radius:14px;
-  cursor:pointer;
-}
-.action:hover{
-  background:#fff;
-  color:#000;
+.money{
+  font-size:22px;
+  font-weight:900;
+  color:var(--green);
 }
 
-/* PHONE */
-#phone{
-  position:absolute;
-  z-index:80;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%);
-  width:min(390px,92vw);
-  height:min(780px,90vh);
-  border:8px solid #242424;
-  border-radius:45px;
-  background:#080808;
-  box-shadow:0 30px 120px #000;
-  overflow:hidden;
+/* STATS */
+.stats{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:8px;
+  margin-top:12px;
 }
-#phoneTop{
-  height:45px;
-  padding:14px 20px;
+.stat{
+  background:#ffffff05;
+  border:1px solid var(--line);
+  border-radius:9px;
+  padding:7px 9px;
+}
+.statTop{
   display:flex;
   justify-content:space-between;
-  font-size:11px;
+  font-size:10px;
+  color:var(--muted);
+  margin-bottom:5px;
 }
-#phoneScreen{
-  height:calc(100% - 45px);
-  padding:18px;
-  overflow:auto;
-  background:
-    radial-gradient(circle at 50% 0,#252525,#090909 50%);
-}
-#closePhone{
-  position:absolute;
-  right:15px;
-  top:50px;
-  z-index:5;
-  border:0;
-  background:#ffffff12;
-  color:#fff;
-  width:35px;
-  height:35px;
-  border-radius:50%;
-  cursor:pointer;
-}
-.phoneHeader{
-  margin:15px 0 25px;
-}
-.phoneHeader h2{
-  margin:0;
-  font-size:28px;
-}
-.phoneHeader p{
-  color:#777;
-  margin-top:6px;
-}
-.apps{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:18px;
-}
-.app{
-  text-align:center;
-  cursor:pointer;
-  font-size:11px;
-  color:#aaa;
-}
-.appIcon{
-  margin:auto auto 7px;
-  width:62px;
-  height:62px;
-  border-radius:17px;
-  background:#1b1b1b;
-  border:1px solid #ffffff15;
-  display:grid;
-  place-items:center;
-  font-size:26px;
-}
-.app:hover .appIcon{
-  background:#333;
-}
-
-.card{
-  background:#151515;
-  border:1px solid #ffffff0f;
-  border-radius:18px;
-  padding:17px;
-  margin-bottom:12px;
-}
-.card small{color:#777}
-.card h3{margin:6px 0}
-.red{color:#ff4c4c}
-
-.back{
-  border:0;
-  background:none;
-  color:#aaa;
-  padding:0;
-  margin-bottom:15px;
-  cursor:pointer;
-}
-
-/* DIALOG */
-#dialog{
-  position:absolute;
-  z-index:70;
-  left:50%;
-  bottom:25px;
-  transform:translateX(-50%);
-  width:min(750px,92%);
-  background:#080808ee;
-  border:1px solid #ffffff20;
+.bar{
+  height:4px;
+  background:#242a33;
   border-radius:20px;
-  padding:22px;
-  box-shadow:0 20px 80px #000;
+  overflow:hidden;
 }
-#speaker{
-  font-size:11px;
-  letter-spacing:3px;
-  color:#aaa;
+.fill{
+  height:100%;
+  background:#eee;
+  transition:.3s;
 }
-#dialogText{
-  font-size:18px;
-  line-height:1.5;
-  margin:10px 0 18px;
+
+/* LAYOUT */
+.layout{
+  display:grid;
+  grid-template-columns:220px 1fr 280px;
+  min-height:calc(100vh - 110px);
 }
-.choice{
+nav{
+  border-right:1px solid var(--line);
+  padding:18px 12px;
+}
+.navBtn{
   display:block;
   width:100%;
   text-align:left;
-  border:1px solid #ffffff15;
-  background:#151515;
-  color:#eee;
-  padding:13px;
-  margin-top:8px;
-  border-radius:10px;
+  padding:12px;
+  margin-bottom:6px;
+  border:0;
+  border-radius:9px;
+  background:transparent;
+  color:#aab2c0;
   cursor:pointer;
 }
-.choice:hover{
-  background:#eee;
-  color:#000;
+.navBtn:hover,.navBtn.active{
+  background:#ffffff0b;
+  color:#fff;
+}
+main{
+  padding:25px;
+  overflow:hidden;
+}
+aside{
+  border-left:1px solid var(--line);
+  padding:18px;
 }
 
-/* NOTIFICATION */
-#notification{
-  position:absolute;
-  z-index:90;
-  top:25px;
-  left:50%;
-  transform:translateX(-50%) translateY(-150px);
-  width:min(370px,90%);
-  background:#171717e8;
-  backdrop-filter:blur(20px);
-  padding:15px;
-  border-radius:18px;
-  border:1px solid #ffffff18;
-  transition:.4s;
+/* COMMON */
+h1{
+  margin:0 0 6px;
+  font-size:30px;
 }
-#notification.show{
-  transform:translateX(-50%) translateY(0);
+.subtitle{
+  color:var(--muted);
+  margin-bottom:22px;
 }
-#notification small{color:#888}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+  gap:12px;
+}
+.card{
+  background:linear-gradient(145deg,#141922,#0d1117);
+  border:1px solid var(--line);
+  border-radius:15px;
+  padding:17px;
+}
+.card h3{margin:7px 0}
+.small{font-size:11px;color:var(--muted)}
+.big{
+  font-size:25px;
+  font-weight:900;
+}
+.green{color:var(--green)}
+.red{color:var(--red)}
+.yellow{color:var(--yellow)}
+.blue{color:var(--blue)}
+.btn{
+  width:100%;
+  border:1px solid #ffffff15;
+  background:#202630;
+  color:white;
+  padding:10px;
+  border-radius:9px;
+  cursor:pointer;
+  margin-top:10px;
+}
+.btn:hover{background:#2a3340}
+.btn.greenBtn{
+  background:#dfffea;
+  color:#08120c;
+  font-weight:bold;
+}
+.btn.redBtn{
+  background:#3a1719;
+  color:#ffb5b5;
+}
+.price{
+  font-size:19px;
+  font-weight:800;
+  margin-top:8px;
+}
+.tag{
+  display:inline-block;
+  font-size:9px;
+  padding:4px 7px;
+  border-radius:20px;
+  background:#ffffff0b;
+  color:#aeb6c3;
+}
 
-/* END CHAPTER */
-#chapter{
-  position:absolute;
-  inset:0;
-  z-index:150;
-  background:#000;
+/* RIGHT */
+.sideTitle{
+  font-size:11px;
+  letter-spacing:2px;
+  color:#707b8c;
+  margin-bottom:10px;
+}
+.log{
+  padding:10px 0;
+  border-bottom:1px solid #ffffff09;
+  font-size:11px;
+  line-height:1.4;
+}
+.logTime{
+  color:#667080;
+  font-size:9px;
+}
+.goal{
+  background:#ffffff05;
+  border:1px solid var(--line);
+  padding:12px;
+  border-radius:12px;
+  margin-bottom:10px;
+}
+
+/* HOME */
+.hero{
+  min-height:200px;
+  border-radius:20px;
+  border:1px solid var(--line);
+  background:
+    linear-gradient(90deg,#000b,#0002),
+    radial-gradient(circle at 80% 50%,#24412e,#10141b 45%);
+  padding:30px;
   display:flex;
   align-items:center;
+  margin-bottom:18px;
+}
+.hero h2{
+  font-size:36px;
+  margin:0 0 10px;
+}
+.quick{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+}
+
+/* MODAL */
+#modal{
+  position:fixed;
+  inset:0;
+  z-index:100;
+  background:#000b;
+  backdrop-filter:blur(8px);
+  display:flex;
   justify-content:center;
-  text-align:center;
+  align-items:center;
+  padding:20px;
 }
-#chapter h1{
-  font-size:clamp(35px,8vw,90px);
-  margin:0;
+.modalBox{
+  width:min(480px,100%);
+  background:#11161e;
+  border:1px solid #303846;
+  border-radius:20px;
+  padding:24px;
+  box-shadow:0 30px 100px #000;
 }
-#chapter p{
-  color:#777;
-  letter-spacing:5px;
+.modalBox h2{margin-top:0}
+.modalActions{
+  display:flex;
+  gap:8px;
+}
+.modalActions button{flex:1}
+
+/* MOBILE */
+.mobileNav{display:none}
+
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr}
+  nav,aside{display:none}
+  main{
+    padding:16px 16px 90px;
+  }
+  .stats{
+    grid-template-columns:repeat(5,1fr);
+    overflow:auto;
+  }
+  .stat{
+    min-width:85px;
+  }
+  .quick{
+    grid-template-columns:repeat(2,1fr);
+  }
+  .hero h2{font-size:27px}
+  .mobileNav{
+    position:fixed;
+    display:flex;
+    bottom:0;
+    left:0;
+    right:0;
+    z-index:60;
+    background:#0b0e13f2;
+    border-top:1px solid var(--line);
+    padding:7px;
+    overflow:auto;
+  }
+  .mobileNav button{
+    min-width:75px;
+    border:0;
+    background:none;
+    color:#8993a3;
+    font-size:9px;
+    padding:8px 5px;
+  }
 }
 </style>
 </head>
 
 <body>
-<div id="game">
 
-<div id="intro">
-  <div id="introText"></div>
-</div>
+<div id="app">
 
-<div id="world" class="hidden">
+<header>
+  <div class="top">
+    <div>
+      <div class="logo">ONE <span>LIFE</span></div>
+      <div class="clock" id="clock">DAY 1 • 08:00</div>
+    </div>
 
-  <div id="roomTitle">
-    <h1>UNKNOWN RESIDENCE</h1>
-    <p>Master Bedroom • 04:17 AM</p>
+    <div style="text-align:right">
+      <div class="small">NET CASH</div>
+      <div class="money" id="money">$0</div>
+    </div>
   </div>
 
-  <div id="hud">
-    <div class="hudBox">CASH <span class="green" id="cash">$2,147,830</span></div>
-    <div class="hudBox">CLUES <span id="clues">0</span>/5</div>
+  <div class="stats">
+    <div class="stat">
+      <div class="statTop"><span>ENERGY</span><span id="energyN">100</span></div>
+      <div class="bar"><div class="fill" id="energyB"></div></div>
+    </div>
+
+    <div class="stat">
+      <div class="statTop"><span>HUNGER</span><span id="hungerN">100</span></div>
+      <div class="bar"><div class="fill" id="hungerB"></div></div>
+    </div>
+
+    <div class="stat">
+      <div class="statTop"><span>HAPPINESS</span><span id="happyN">60</span></div>
+      <div class="bar"><div class="fill" id="happyB"></div></div>
+    </div>
+
+    <div class="stat">
+      <div class="statTop"><span>HEALTH</span><span id="healthN">100</span></div>
+      <div class="bar"><div class="fill" id="healthB"></div></div>
+    </div>
+
+    <div class="stat">
+      <div class="statTop"><span>REPUTATION</span><span id="repN">0</span></div>
+      <div class="bar"><div class="fill" id="repB"></div></div>
+    </div>
   </div>
+</header>
 
-  <div id="scene">
-    <div class="window"></div>
-    <div class="bed"></div>
-    <div class="table"></div>
+<div class="layout">
 
-    <div class="phoneObject" onclick="openPhone()"></div>
+<nav id="desktopNav"></nav>
 
-    <div class="door" onclick="doorAction()"></div>
+<main id="content"></main>
 
-    <div class="objectLabel" style="left:16%;bottom:6%">NIGHTSTAND</div>
-    <div class="objectLabel" style="right:4%;top:4%">BEDROOM DOOR</div>
-  </div>
+<aside>
+  <div class="sideTitle">CURRENT GOALS</div>
+  <div id="goals"></div>
 
-  <div id="actions">
-    <button class="action" onclick="inspectWallet()">Inspect Wallet</button>
-    <button class="action" onclick="openPhone()">Check Phone</button>
-    <button class="action" onclick="doorAction()">Answer Door</button>
-  </div>
+  <div class="sideTitle" style="margin-top:25px">LIFE LOG</div>
+  <div id="logs"></div>
+</aside>
 
 </div>
 
-<div id="phone" class="hidden">
-  <div id="phoneTop">
-    <span>04:17</span>
-    <span>●●● 93%</span>
+<div class="mobileNav" id="mobileNav"></div>
+
+</div>
+
+<div id="modal" class="hidden">
+  <div class="modalBox">
+    <div class="small" id="modalType">EVENT</div>
+    <h2 id="modalTitle"></h2>
+    <p id="modalText" style="color:#aab3c1;line-height:1.6"></p>
+    <div id="modalActions" class="modalActions"></div>
   </div>
-
-  <button id="closePhone" onclick="closePhone()">×</button>
-
-  <div id="phoneScreen"></div>
-</div>
-
-<div id="dialog" class="hidden">
-  <div id="speaker"></div>
-  <div id="dialogText"></div>
-  <div id="choices"></div>
-</div>
-
-<div id="notification">
-  <small>UNKNOWN</small>
-  <div id="notificationText"></div>
-</div>
-
-<div id="chapter" class="hidden">
-  <div>
-    <p>CHAPTER ONE COMPLETE</p>
-    <h1>WHO WERE YOU?</h1>
-  </div>
-</div>
-
 </div>
 
 <script>
-const state = {
-  cash:2147830,
-  clues:0,
-  mayaTrust:0,
-  unknownTrust:0,
-  wallet:false,
-  messages:false,
-  door:false,
-  blackCard:false
-};
-
-const introLines = [
-  "...",
-  "Your head is killing you.",
-  "You don't remember falling asleep.",
-  "Actually...",
-  "You don't remember anything.",
-  "Not this room.",
-  "Not this house.",
-  "Not even your own name.",
-  "Then you notice the phone."
+const locations = [
+  ["home","⌂","Home"],
+  ["jobs","▣","Jobs"],
+  ["bank","$","Bank"],
+  ["market","↗","Market"],
+  ["business","◆","Business"],
+  ["cars","▰","Cars"],
+  ["property","▥","Property"],
+  ["shop","□","Shop"],
+  ["profile","◎","Life"]
 ];
 
-let introIndex = 0;
+const jobs = [
+  {id:"delivery",name:"Delivery Rider",pay:55,energy:14,hours:3,req:0,rep:0},
+  {id:"barista",name:"Coffee Shop Worker",pay:90,energy:18,hours:4,req:0,rep:1},
+  {id:"sales",name:"Sales Representative",pay:190,energy:23,hours:5,req:5,rep:2},
+  {id:"freelance",name:"Freelance Developer",pay:420,energy:25,hours:5,req:12,rep:3},
+  {id:"manager",name:"Company Manager",pay:900,energy:30,hours:7,req:25,rep:5},
+  {id:"executive",name:"Executive Consultant",pay:2200,energy:35,hours:8,req:55,rep:8}
+];
 
-const intro = document.getElementById("intro");
-const introText = document.getElementById("introText");
-const world = document.getElementById("world");
+const cars = [
+  {id:"bike",name:"Used Bicycle",price:180,rep:1},
+  {id:"sedan",name:"Old Sedan",price:4200,rep:4},
+  {id:"sport",name:"Sports Coupe",price:38000,rep:10},
+  {id:"lux",name:"Luxury SUV",price:92000,rep:18},
+  {id:"super",name:"V12 Supercar",price:310000,rep:30},
+  {id:"hyper",name:"Carbon Hypercar",price:2400000,rep:50}
+];
 
-function playIntro(){
-  if(introIndex >= introLines.length){
-    intro.style.display="none";
-    world.classList.remove("hidden");
+const properties = [
+  {id:"room",name:"Small Room",price:3500,income:0,happy:4},
+  {id:"studio",name:"City Studio",price:28000,income:120,happy:8},
+  {id:"apartment",name:"Luxury Apartment",price:180000,income:650,happy:15},
+  {id:"villa",name:"Modern Villa",price:850000,income:2400,happy:22},
+  {id:"penthouse",name:"Sky Penthouse",price:3200000,income:8500,happy:35}
+];
 
-    setTimeout(()=>{
-      notify("UNKNOWN","If you're reading this... you survived.");
-    },900);
+const businesses = [
+  {id:"cart",name:"Street Food Cart",price:1200,income:80,employees:1},
+  {id:"agency",name:"Digital Agency",price:8500,income:420,employees:3},
+  {id:"cafe",name:"Coffee Shop",price:24000,income:800,employees:5},
+  {id:"garage",name:"Auto Garage",price:70000,income:2200,employees:8},
+  {id:"software",name:"Software Company",price:280000,income:8500,employees:20},
+  {id:"hotel",name:"Boutique Hotel",price:1200000,income:31000,employees:45},
+  {id:"fund",name:"Investment Fund",price:6000000,income:145000,employees:80},
+  {id:"empire",name:"Global Holdings",price:40000000,income:950000,employees:400}
+];
 
-    setTimeout(()=>{
-      notify("UNKNOWN","Don't trust Maya.");
-    },3500);
+const stocks = [
+  {id:"nova",name:"NOVA",price:32.40},
+  {id:"volt",name:"VOLT",price:81.20},
+  {id:"axis",name:"AXIS",price:144.80},
+  {id:"orbit",name:"ORBIT",price:18.60}
+];
 
-    return;
-  }
+const state = {
+  page:"home",
+  day:1,
+  hour:8,
+  minute:0,
+  money:0,
+  debt:0,
+  energy:100,
+  hunger:100,
+  happiness:60,
+  health:100,
+  reputation:0,
+  skill:0,
+  ownedCars:[],
+  ownedProperties:[],
+  ownedBusinesses:[],
+  portfolio:{},
+  stockPrices:{},
+  logs:[],
+  achievements:[],
+  totalEarned:0,
+  employees:0,
+  lastIncomeDay:1
+};
 
-  introText.style.opacity=0;
+stocks.forEach(s=>state.stockPrices[s.id]=s.price);
 
-  setTimeout(()=>{
-    introText.textContent=introLines[introIndex++];
-    introText.style.opacity=1;
-  },250);
-
-  setTimeout(playIntro,1500);
+function fmt(n){
+  if(Math.abs(n)>=1000000000) return "$"+(n/1000000000).toFixed(2)+"B";
+  if(Math.abs(n)>=1000000) return "$"+(n/1000000).toFixed(2)+"M";
+  if(Math.abs(n)>=1000) return "$"+Math.round(n).toLocaleString();
+  return "$"+Math.round(n);
 }
 
-playIntro();
-
-function money(n){
-  return "$"+n.toLocaleString();
+function clamp(v,min=0,max=100){
+  return Math.max(min,Math.min(max,v));
 }
 
-function updateHUD(){
-  document.getElementById("cash").textContent=money(state.cash);
-  document.getElementById("clues").textContent=state.clues;
-  save();
-}
-
-function addClue(){
-  state.clues++;
-  updateHUD();
-
-  if(state.clues>=5){
-    setTimeout(()=>{
-      document.getElementById("chapter").classList.remove("hidden");
-    },1500);
-  }
-}
-
-function notify(sender,text){
-  const n=document.getElementById("notification");
-
-  n.querySelector("small").textContent=sender;
-  document.getElementById("notificationText").textContent=text;
-
-  n.classList.add("show");
-
-  setTimeout(()=>{
-    n.classList.remove("show");
-  },2600);
-}
-
-function inspectWallet(){
-  if(state.wallet){
-    dialog("YOU","There's nothing else inside.",[
-      ["Close",closeDialog]
-    ]);
-    return;
-  }
-
-  state.wallet=true;
-  state.blackCard=true;
-
-  addClue();
-
-  dialog(
-    "YOU",
-    "A black metal card. No bank logo. The name has been violently scratched away. Behind it is a VANTA GROUP access card.",
-    [
-      ["Take both cards",()=>{
-        closeDialog();
-        notify("CLUE DISCOVERED","VANTA GROUP ACCESS CARD");
-      }]
-    ]
-  );
-}
-
-function doorAction(){
-  if(state.door){
-    mayaConversation2();
-    return;
-  }
-
-  state.door=true;
-
-  dialog(
-    "MAYA",
-    "Sir? You're awake. Thank God. I've been trying to reach you all night.",
-    [
-      ["Who are you?",()=>{
-        state.mayaTrust--;
-        mayaWho();
-      }],
-      ["What happened to me?",()=>{
-        state.mayaTrust++;
-        mayaAccident();
-      }],
-      ["Don't come in.",()=>{
-        state.mayaTrust-=2;
-        mayaBlocked();
-      }]
-    ]
-  );
-}
-
-function mayaWho(){
-  dialog(
-    "MAYA",
-    "...It's Maya. Your executive assistant. I've worked for you for four years.",
-    [
-      ["What's my name?",mayaName],
-      ["I don't remember you.",mayaMemory]
-    ]
-  );
-}
-
-function mayaAccident(){
-  dialog(
-    "MAYA",
-    "You disappeared after the VANTA board meeting last night. Your car was found abandoned. Then somehow you came home.",
-    [
-      ["Was anyone with me?",mayaMemory],
-      ["What is VANTA?",mayaVanta]
-    ]
-  );
-}
-
-function mayaBlocked(){
-  dialog(
-    "MAYA",
-    "Okay. I won't. But the board is already asking questions... and you have a meeting at nine.",
-    [
-      ["What board?",mayaVanta],
-      ["Leave me alone.",closeDialog]
-    ]
-  );
-}
-
-function mayaName(){
-  dialog(
-    "MAYA",
-    "That's not funny. You know I can't say it here.",
-    [
-      ["Why not?",()=>{
-        state.mayaTrust++;
-        dialog(
-          "MAYA",
-          "Because you made that rule yourself. No names inside this house. You said the walls weren't safe.",
-          [["...",closeDialog]]
-        );
-        addClue();
-      }]
-    ]
-  );
-}
-
-function mayaMemory(){
-  dialog(
-    "MAYA",
-    "Look at me. Are you seriously telling me you don't remember anything?",
-    [
-      ["Nothing.",()=>{
-        state.mayaTrust+=2;
-        dialog(
-          "MAYA",
-          "Then we have a much bigger problem than the board.",
-          [["Tell me everything.",mayaVanta]]
-        );
-      }],
-      ["I'm testing you.",()=>{
-        state.mayaTrust--;
-        dialog(
-          "MAYA",
-          "Of course you are...",
-          [["Close",closeDialog]]
-        );
-      }]
-    ]
-  );
-}
-
-function mayaVanta(){
-  dialog(
-    "MAYA",
-    "VANTA Group. Your company. Technology, hotels, logistics, investments. You're the founder and CEO.",
-    [
-      ["How much is it worth?",()=>{
-        dialog(
-          "MAYA",
-          "Publicly? 8.4 billion. What it's actually worth... only you know.",
-          [["Close",closeDialog]]
-        );
-        addClue();
-      }],
-      ["Who wants me gone?",()=>{
-        dialog(
-          "MAYA",
-          "That's a dangerous question to ask before you remember who your friends are.",
-          [["Close",closeDialog]]
-        );
-      }]
-    ]
-  );
-}
-
-function mayaConversation2(){
-  dialog(
-    "MAYA",
-    "Your driver is downstairs whenever you're ready.",
-    [
-      ["Where can I go?",()=>{
-        dialog(
-          "MAYA",
-          "VANTA Tower, the hotel, your private garage... or nowhere. Staying here might actually be smartest.",
-          [["Close",closeDialog]]
-        );
-      }],
-      ["Close",closeDialog]
-    ]
-  );
-}
-
-function dialog(speaker,text,options){
-  const box=document.getElementById("dialog");
-
-  box.classList.remove("hidden");
-
-  document.getElementById("speaker").textContent=speaker;
-  document.getElementById("dialogText").textContent=text;
-
-  const choices=document.getElementById("choices");
-  choices.innerHTML="";
-
-  options.forEach(option=>{
-    const b=document.createElement("button");
-
-    b.className="choice";
-    b.textContent=option[0];
-    b.onclick=option[1];
-
-    choices.appendChild(b);
+function addLog(text){
+  state.logs.unshift({
+    text,
+    day:state.day,
+    hour:state.hour
   });
-}
-
-function closeDialog(){
-  document.getElementById("dialog").classList.add("hidden");
-}
-
-function openPhone(){
-  document.getElementById("phone").classList.remove("hidden");
-  phoneHome();
-}
-
-function closePhone(){
-  document.getElementById("phone").classList.add("hidden");
-}
-
-function phoneHome(){
-  const s=document.getElementById("phoneScreen");
-
-  s.innerHTML=`
-    <div class="phoneHeader">
-      <h2>Good morning.</h2>
-      <p>47 unread notifications</p>
-    </div>
-
-    <div class="apps">
-
-      <div class="app" onclick="messagesApp()">
-        <div class="appIcon">💬</div>
-        Messages
-      </div>
-
-      <div class="app" onclick="bankApp()">
-        <div class="appIcon">◈</div>
-        Private Bank
-      </div>
-
-      <div class="app" onclick="contactsApp()">
-        <div class="appIcon">♟</div>
-        Contacts
-      </div>
-
-      <div class="app" onclick="galleryApp()">
-        <div class="appIcon">▣</div>
-        Gallery
-      </div>
-
-      <div class="app" onclick="notesApp()">
-        <div class="appIcon">≡</div>
-        Notes
-      </div>
-
-      <div class="app" onclick="vantaApp()">
-        <div class="appIcon">V</div>
-        VANTA
-      </div>
-
-    </div>
-  `;
-}
-
-function phoneBack(){
-  phoneHome();
-}
-
-function messagesApp(){
-  if(!state.messages){
-    state.messages=true;
-    addClue();
-  }
-
-  document.getElementById("phoneScreen").innerHTML=`
-    <button class="back" onclick="phoneBack()">‹ Home</button>
-
-    <div class="phoneHeader">
-      <h2>Messages</h2>
-      <p>47 unread</p>
-    </div>
-
-    <div class="card">
-      <small>UNKNOWN • NOW</small>
-      <h3 class="red">DON'T TRUST MAYA.</h3>
-      <p>Delete this conversation after reading.</p>
-    </div>
-
-    <div class="card">
-      <small>MAYA • 03:51</small>
-      <h3>Where are you?</h3>
-      <p>Please answer me. Your car is empty.</p>
-    </div>
-
-    <div class="card">
-      <small>ADRIAN • YESTERDAY</small>
-      <h3>You made a mistake.</h3>
-      <p>The board won't forgive this one.</p>
-    </div>
-
-    <div class="card">
-      <small>PRIVATE NUMBER • YESTERDAY</small>
-      <h3>It's done.</h3>
-      <p>You know where to find the rest.</p>
-    </div>
-  `;
-}
-
-function bankApp(){
-  document.getElementById("phoneScreen").innerHTML=`
-    <button class="back" onclick="phoneBack()">‹ Home</button>
-
-    <div class="phoneHeader">
-      <h2>Private Bank</h2>
-      <p>Personal accounts</p>
-    </div>
-
-    <div class="card">
-      <small>AVAILABLE BALANCE</small>
-      <h3 style="font-size:32px">${money(state.cash)}</h3>
-    </div>
-
-    <div class="card">
-      <small>YESTERDAY • 23:48</small>
-      <h3 class="red">-$500,000</h3>
-      <p>Transfer • Account ending 0719</p>
-    </div>
-
-    <div class="card">
-      <small>YESTERDAY • 18:02</small>
-      <h3>+$83,400</h3>
-      <p>VANTA GROUP</p>
-    </div>
-  `;
-}
-
-function contactsApp(){
-  document.getElementById("phoneScreen").innerHTML=`
-    <button class="back" onclick="phoneBack()">‹ Home</button>
-
-    <div class="phoneHeader">
-      <h2>Contacts</h2>
-    </div>
-
-    <div class="card"><h3>Maya</h3><small>Executive Assistant</small></div>
-    <div class="card"><h3>Adrian Vale</h3><small>VANTA Board</small></div>
-    <div class="card"><h3>Driver</h3><small>Encrypted Contact</small></div>
-    <div class="card"><h3>DO NOT ANSWER</h3><small>Unknown Number</small></div>
-  `;
-}
-
-function galleryApp(){
-  document.getElementById("phoneScreen").innerHTML=`
-    <button class="back" onclick="phoneBack()">‹ Home</button>
-
-    <div class="phoneHeader">
-      <h2>Gallery</h2>
-      <p>1,284 items</p>
-    </div>
-
-    <div class="card">
-      <small>LAST PHOTO • 11:41 PM</small>
-      <h3>Security Door — B17</h3>
-      <p>A blurry photograph of a steel door marked B17. Written beneath it: "If I forget."</p>
-    </div>
-  `;
-
-  if(!state.galleryClue){
-    state.galleryClue=true;
-    addClue();
-  }
-}
-
-function notesApp(){
-  document.getElementById("phoneScreen").innerHTML=`
-    <button class="back" onclick="phoneBack()">‹ Home</button>
-
-    <div class="phoneHeader">
-      <h2>Notes</h2>
-    </div>
-
-    <div class="card">
-      <small>LOCKED NOTE</small>
-      <h3>IF SOMETHING HAPPENS</h3>
-      <p>Password hint: "The first thing I bought when nobody believed me."</p>
-    </div>
-  `;
-}
-
-function vantaApp(){
-  document.getElementById("phoneScreen").innerHTML=`
-    <button class="back" onclick="phoneBack()">‹ Home</button>
-
-    <div class="phoneHeader">
-      <h2>VANTA</h2>
-      <p>Executive access</p>
-    </div>
-
-    <div class="card">
-      <small>COMPANY VALUATION</small>
-      <h3>$8.4B</h3>
-    </div>
-
-    <div class="card">
-      <small>TODAY • 09:00</small>
-      <h3>Emergency Board Meeting</h3>
-      <p>Attendance mandatory.</p>
-    </div>
-
-    <div class="card">
-      <small>SECURITY</small>
-      <h3 class="red">Executive credentials suspended</h3>
-      <p>Authorization: A. Vale</p>
-    </div>
-  `;
+  state.logs=state.logs.slice(0,20);
 }
 
 function save(){
-  localStorage.setItem("wthami_save",JSON.stringify(state));
+  localStorage.setItem("oneLifeSave",JSON.stringify(state));
 }
 
 function load(){
   try{
-    const saved=JSON.parse(localStorage.getItem("wthami_save"));
-
-    if(saved){
-      Object.assign(state,saved);
-      updateHUD();
-    }
+    const x=JSON.parse(localStorage.getItem("oneLifeSave"));
+    if(x) Object.assign(state,x);
   }catch(e){}
 }
 
+function advance(hours){
+  state.hour+=hours;
+  state.energy=clamp(state.energy-hours*2.5);
+  state.hunger=clamp(state.hunger-hours*3);
+
+  while(state.hour>=24){
+    state.hour-=24;
+    newDay();
+  }
+
+  if(state.hunger<15){
+    state.health=clamp(state.health-4);
+  }
+
+  if(state.energy<10){
+    state.health=clamp(state.health-2);
+  }
+
+  randomEvent();
+  update();
+}
+
+function newDay(){
+  state.day++;
+
+  let income=0;
+
+  state.ownedBusinesses.forEach(id=>{
+    const b=businesses.find(x=>x.id===id);
+    if(b) income+=b.income;
+  });
+
+  state.ownedProperties.forEach(id=>{
+    const p=properties.find(x=>x.id===id);
+    if(p) income+=p.income;
+  });
+
+  if(income>0){
+    state.money+=income;
+    state.totalEarned+=income;
+    addLog("Passive income received: "+fmt(income));
+  }
+
+  if(state.debt>0){
+    const interest=state.debt*.002;
+    state.debt+=interest;
+  }
+
+  stocks.forEach(stock=>{
+    let p=state.stockPrices[stock.id] || stock.price;
+    p*=1+(Math.random()*.12-.06);
+    state.stockPrices[stock.id]=Math.max(1,p);
+  });
+
+  state.energy=clamp(state.energy+20);
+  state.hunger=clamp(state.hunger-8);
+
+  checkAchievements();
+}
+
+function randomEvent(){
+  if(Math.random()>.13) return;
+
+  const events=[
+    {
+      title:"Lucky Find",
+      text:"You found $80 in an old jacket.",
+      action(){
+        state.money+=80;
+        state.totalEarned+=80;
+        addLog("Found $80.");
+      }
+    },
+    {
+      title:"Unexpected Expense",
+      text:"Your phone screen broke. Repair costs $75.",
+      action(){
+        state.money=Math.max(0,state.money-75);
+        addLog("Paid $75 phone repair.");
+      }
+    },
+    {
+      title:"Networking Opportunity",
+      text:"You met someone useful at a café. Reputation +3.",
+      action(){
+        state.reputation=clamp(state.reputation+3);
+        addLog("Made a useful connection.");
+      }
+    },
+    {
+      title:"Great Day",
+      text:"Things are going surprisingly well. Happiness +8.",
+      action(){
+        state.happiness=clamp(state.happiness+8);
+      }
+    }
+  ];
+
+  const e=events[Math.floor(Math.random()*events.length)];
+
+  showModal("RANDOM EVENT",e.title,e.text,[
+    ["Continue",()=>{
+      e.action();
+      closeModal();
+      update();
+    }]
+  ]);
+}
+
+function work(id){
+  const job=jobs.find(j=>j.id===id);
+
+  if(state.skill<job.req){
+    message("Locked","You need "+job.req+" skill to work this job.");
+    return;
+  }
+
+  if(state.energy<job.energy){
+    message("Too tired","You don't have enough energy.");
+    return;
+  }
+
+  if(state.hunger<10){
+    message("You're starving","Eat something before working.");
+    return;
+  }
+
+  state.money+=job.pay;
+  state.totalEarned+=job.pay;
+  state.energy=clamp(state.energy-job.energy);
+  state.happiness=clamp(state.happiness-2);
+  state.skill+=1;
+  state.reputation=clamp(state.reputation+job.rep*.2);
+
+  addLog("Worked as "+job.name+" and earned "+fmt(job.pay)+".");
+  advance(job.hours);
+}
+
+function sleep(){
+  state.energy=100;
+  state.health=clamp(state.health+8);
+  state.happiness=clamp(state.happiness+3);
+
+  let hours=8;
+
+  state.hour+=hours;
+
+  if(state.hour>=24){
+    state.hour-=24;
+    newDay();
+  }
+
+  addLog("Slept for 8 hours.");
+  update();
+}
+
+function eat(price,amount,name){
+  if(state.money<price){
+    message("Not enough money","You can't afford this.");
+    return;
+  }
+
+  state.money-=price;
+  state.hunger=clamp(state.hunger+amount);
+  state.happiness=clamp(state.happiness+2);
+  addLog("Bought "+name+" for "+fmt(price)+".");
+  advance(1);
+}
+
+function buyCar(id){
+  const item=cars.find(x=>x.id===id);
+
+  if(state.ownedCars.includes(id)) return;
+
+  if(state.money<item.price){
+    message("Not enough money","You need "+fmt(item.price)+".");
+    return;
+  }
+
+  state.money-=item.price;
+  state.ownedCars.push(id);
+  state.reputation=clamp(state.reputation+item.rep);
+  state.happiness=clamp(state.happiness+8);
+
+  addLog("Bought "+item.name+".");
+
+  checkAchievements();
+  update();
+}
+
+function buyProperty(id){
+  const p=properties.find(x=>x.id===id);
+
+  if(state.ownedProperties.includes(id)) return;
+
+  if(state.money<p.price){
+    message("Not enough money","You need "+fmt(p.price)+".");
+    return;
+  }
+
+  state.money-=p.price;
+  state.ownedProperties.push(id);
+  state.happiness=clamp(state.happiness+p.happy);
+
+  addLog("Purchased "+p.name+".");
+  checkAchievements();
+  update();
+}
+
+function buyBusiness(id){
+  const b=businesses.find(x=>x.id===id);
+
+  if(state.ownedBusinesses.includes(id)) return;
+
+  if(state.money<b.price){
+    message("Not enough capital","You need "+fmt(b.price)+" to start this business.");
+    return;
+  }
+
+  state.money-=b.price;
+  state.ownedBusinesses.push(id);
+  state.employees+=b.employees;
+  state.reputation=clamp(state.reputation+4);
+
+  addLog("Founded "+b.name+".");
+  checkAchievements();
+  update();
+}
+
+function loan(amount){
+  const limit=5000+state.reputation*3000;
+
+  if(state.debt+amount>limit){
+    message("Loan denied","Your maximum total credit is "+fmt(limit)+".");
+    return;
+  }
+
+  state.money+=amount;
+  state.debt+=amount;
+
+  addLog("Borrowed "+fmt(amount)+".");
+  update();
+}
+
+function repay(){
+  if(state.debt<=0) return;
+
+  const amount=Math.min(state.money,state.debt);
+
+  state.money-=amount;
+  state.debt-=amount;
+
+  addLog("Repaid "+fmt(amount)+" of debt.");
+  update();
+}
+
+function buyStock(id){
+  const price=state.stockPrices[id];
+
+  if(state.money<price){
+    message("Not enough cash","You can't afford one share.");
+    return;
+  }
+
+  state.money-=price;
+  state.portfolio[id]=(state.portfolio[id]||0)+1;
+
+  addLog("Bought 1 share of "+id.toUpperCase()+".");
+  update();
+}
+
+function sellStock(id){
+  if(!state.portfolio[id]) return;
+
+  const price=state.stockPrices[id];
+
+  state.portfolio[id]--;
+  state.money+=price;
+
+  addLog("Sold 1 share of "+id.toUpperCase()+".");
+  update();
+}
+
+function train(){
+  if(state.money<100){
+    message("Training","You need $100.");
+    return;
+  }
+
+  state.money-=100;
+  state.skill+=3;
+  state.energy=clamp(state.energy-10);
+
+  addLog("Completed skill training.");
+  advance(2);
+}
+
+function checkAchievements(){
+  unlock("first1000",state.totalEarned>=1000,"First $1K");
+  unlock("car",state.ownedCars.length>0,"First Vehicle");
+  unlock("boss",state.ownedBusinesses.length>0,"Business Owner");
+  unlock("million",netWorth()>=1000000,"Millionaire");
+  unlock("tenmillion",netWorth()>=10000000,"Eight Figures");
+  unlock("billion",netWorth()>=1000000000,"Billionaire");
+}
+
+function unlock(id,condition,name){
+  if(condition&&!state.achievements.includes(id)){
+    state.achievements.push(id);
+    addLog("Achievement unlocked: "+name);
+    message("ACHIEVEMENT",name);
+  }
+}
+
+function netWorth(){
+  let n=state.money-state.debt;
+
+  state.ownedCars.forEach(id=>{
+    const x=cars.find(c=>c.id===id);
+    if(x)n+=x.price*.7;
+  });
+
+  state.ownedProperties.forEach(id=>{
+    const x=properties.find(p=>p.id===id);
+    if(x)n+=x.price;
+  });
+
+  state.ownedBusinesses.forEach(id=>{
+    const x=businesses.find(b=>b.id===id);
+    if(x)n+=x.price;
+  });
+
+  Object.keys(state.portfolio).forEach(id=>{
+    n+=(state.portfolio[id]||0)*(state.stockPrices[id]||0);
+  });
+
+  return n;
+}
+
+function passiveIncome(){
+  let x=0;
+
+  state.ownedBusinesses.forEach(id=>{
+    const b=businesses.find(y=>y.id===id);
+    if(b)x+=b.income;
+  });
+
+  state.ownedProperties.forEach(id=>{
+    const p=properties.find(y=>y.id===id);
+    if(p)x+=p.income;
+  });
+
+  return x;
+}
+
+function renderNav(){
+  const html=locations.map(x=>`
+    <button class="navBtn ${state.page===x[0]?"active":""}"
+    onclick="go('${x[0]}')">
+      <span style="display:inline-block;width:28px">${x[1]}</span>${x[2]}
+    </button>
+  `).join("");
+
+  document.getElementById("desktopNav").innerHTML=html;
+
+  document.getElementById("mobileNav").innerHTML=
+    locations.map(x=>`
+      <button onclick="go('${x[0]}')">
+        <div style="font-size:17px;margin-bottom:3px">${x[1]}</div>
+        ${x[2]}
+      </button>
+    `).join("");
+}
+
+function go(page){
+  state.page=page;
+  render();
+  save();
+}
+
+function render(){
+  renderNav();
+
+  const content=document.getElementById("content");
+
+  if(state.page==="home") renderHome(content);
+  if(state.page==="jobs") renderJobs(content);
+  if(state.page==="bank") renderBank(content);
+  if(state.page==="market") renderMarket(content);
+  if(state.page==="business") renderBusiness(content);
+  if(state.page==="cars") renderCars(content);
+  if(state.page==="property") renderProperty(content);
+  if(state.page==="shop") renderShop(content);
+  if(state.page==="profile") renderProfile(content);
+
+  renderGoals();
+  renderLogs();
+}
+
+function renderHome(el){
+  let status="SURVIVING";
+
+  if(netWorth()>100000)status="BUILDING";
+  if(netWorth()>1000000)status="WEALTHY";
+  if(netWorth()>10000000)status="ELITE";
+  if(netWorth()>1000000000)status="LEGEND";
+
+  el.innerHTML=`
+    <div class="hero">
+      <div>
+        <div class="tag">LIFE STATUS • ${status}</div>
+        <h2>$0 TO <span class="green">???</span></h2>
+        <p style="color:#9ba5b5;max-width:550px">
+          You started with nothing. Every decision costs time.
+          Build a career, own businesses, invest, and create your empire.
+        </p>
+      </div>
+    </div>
+
+    <div class="quick">
+
+      <div class="card">
+        <div class="small">NET WORTH</div>
+        <div class="big">${fmt(netWorth())}</div>
+      </div>
+
+      <div class="card">
+        <div class="small">DAILY PASSIVE</div>
+        <div class="big green">${fmt(passiveIncome())}</div>
+      </div>
+
+      <div class="card">
+        <div class="small">SKILL</div>
+        <div class="big">${state.skill}</div>
+      </div>
+
+      <div class="card">
+        <div class="small">EMPLOYEES</div>
+        <div class="big">${state.employees}</div>
+      </div>
+
+    </div>
+
+    <h3 style="margin-top:25px">Quick Actions</h3>
+
+    <div class="grid">
+
+      <div class="card">
+        <div class="small">RECOVER</div>
+        <h3>Sleep</h3>
+        <p class="small">Restore your energy and health.</p>
+        <button class="btn" onclick="sleep()">Sleep 8 hours</button>
+      </div>
+
+      <div class="card">
+        <div class="small">CAREER</div>
+        <h3>Find Work</h3>
+        <p class="small">Earn your first money.</p>
+        <button class="btn" onclick="go('jobs')">Job Center</button>
+      </div>
+
+      <div class="card">
+        <div class="small">GROW</div>
+        <h3>Train Skills</h3>
+        <p class="small">$100 • +3 Skill • 2 hours</p>
+        <button class="btn" onclick="train()">Train</button>
+      </div>
+
+      <div class="card">
+        <div class="small">EMPIRE</div>
+        <h3>Start Business</h3>
+        <p class="small">Turn active income into passive income.</p>
+        <button class="btn" onclick="go('business')">Businesses</button>
+      </div>
+
+    </div>
+  `;
+}
+
+function renderJobs(el){
+  el.innerHTML=`
+    <h1>Job Center</h1>
+    <div class="subtitle">Trade your time for money. Build skill to unlock better work.</div>
+
+    <div class="grid">
+      ${jobs.map(j=>{
+        const locked=state.skill<j.req;
+
+        return `
+          <div class="card">
+            <div class="tag">${j.hours} HOURS</div>
+            <h3>${j.name}</h3>
+            <div class="price green">${fmt(j.pay)}</div>
+            <p class="small">
+              Energy -${j.energy}<br>
+              Required skill: ${j.req}
+            </p>
+
+            <button
+              class="btn ${locked?"":"greenBtn"}"
+              onclick="work('${j.id}')"
+              ${locked?"disabled":""}>
+              ${locked?"LOCKED":"WORK SHIFT"}
+            </button>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function renderBank(el){
+  const limit=5000+state.reputation*3000;
+
+  el.innerHTML=`
+    <h1>Bank</h1>
+    <div class="subtitle">Manage cash, debt and credit.</div>
+
+    <div class="grid">
+
+      <div class="card">
+        <div class="small">CASH</div>
+        <div class="big green">${fmt(state.money)}</div>
+      </div>
+
+      <div class="card">
+        <div class="small">DEBT</div>
+        <div class="big red">${fmt(state.debt)}</div>
+      </div>
+
+      <div class="card">
+        <div class="small">CREDIT LIMIT</div>
+        <div class="big">${fmt(limit)}</div>
+      </div>
+
+    </div>
+
+    <h3 style="margin-top:25px">Loans</h3>
+
+    <div class="grid">
+
+      ${[500,2500,10000,50000].map(x=>`
+        <div class="card">
+          <div class="small">PERSONAL CREDIT</div>
+          <h3>${fmt(x)}</h3>
+          <button class="btn" onclick="loan(${x})">Borrow</button>
+        </div>
+      `).join("")}
+
+      <div class="card">
+        <div class="small">DEBT</div>
+        <h3>Repay Debt</h3>
+        <button class="btn greenBtn" onclick="repay()">Pay Maximum</button>
+      </div>
+
+    </div>
+  `;
+}
+
+function renderMarket(el){
+  el.innerHTML=`
+    <h1>Stock Market</h1>
+    <div class="subtitle">Prices change every new day. Profit is never guaranteed.</div>
+
+    <div class="grid">
+
+      ${stocks.map(s=>{
+        const price=state.stockPrices[s.id];
+        const shares=state.portfolio[s.id]||0;
+
+        return `
+          <div class="card">
+            <div class="tag">${s.id.toUpperCase()}</div>
+            <h3>${s.name}</h3>
+
+            <div class="price">${fmt(price)}</div>
+
+            <p class="small">
+              You own ${shares} share${shares===1?"":"s"}<br>
+              Value: ${fmt(shares*price)}
+            </p>
+
+            <button class="btn greenBtn" onclick="buyStock('${s.id}')">
+              BUY 1
+            </button>
+
+            <button class="btn" onclick="sellStock('${s.id}')">
+              SELL 1
+            </button>
+          </div>
+        `;
+      }).join("")}
+
+    </div>
+  `;
+}
+
+function renderBusiness(el){
+  el.innerHTML=`
+    <h1>Businesses</h1>
+    <div class="subtitle">Build assets that pay you every day.</div>
+
+    <div class="grid">
+
+      ${businesses.map(b=>{
+        const own=state.ownedBusinesses.includes(b.id);
+
+        return `
+          <div class="card">
+            <div class="tag">${b.employees} EMPLOYEE${b.employees===1?"":"S"}</div>
+
+            <h3>${b.name}</h3>
+
+            <div class="price">${fmt(b.price)}</div>
+
+            <p class="small">
+              Daily income:
+              <span class="green">${fmt(b.income)}</span>
+            </p>
+
+            <button
+              class="btn ${own?"":"greenBtn"}"
+              onclick="buyBusiness('${b.id}')"
+              ${own?"disabled":""}>
+              ${own?"OWNED":"START BUSINESS"}
+            </button>
+          </div>
+        `;
+      }).join("")}
+
+    </div>
+  `;
+}
+
+function renderCars(el){
+  el.innerHTML=`
+    <h1>Dealership</h1>
+    <div class="subtitle">Cars increase happiness and reputation.</div>
+
+    <div class="grid">
+
+      ${cars.map(c=>{
+        const own=state.ownedCars.includes(c.id);
+
+        return `
+          <div class="card">
+            <div class="tag">REP +${c.rep}</div>
+            <h3>${c.name}</h3>
+            <div class="price">${fmt(c.price)}</div>
+
+            <button
+              class="btn ${own?"":"greenBtn"}"
+              onclick="buyCar('${c.id}')"
+              ${own?"disabled":""}>
+              ${own?"IN GARAGE":"BUY"}
+            </button>
+          </div>
+        `;
+      }).join("")}
+
+    </div>
+  `;
+}
+
+function renderProperty(el){
+  el.innerHTML=`
+    <h1>Real Estate</h1>
+    <div class="subtitle">Buy somewhere to live—or build a property portfolio.</div>
+
+    <div class="grid">
+
+      ${properties.map(p=>{
+        const own=state.ownedProperties.includes(p.id);
+
+        return `
+          <div class="card">
+            <div class="tag">HAPPINESS +${p.happy}</div>
+            <h3>${p.name}</h3>
+
+            <div class="price">${fmt(p.price)}</div>
+
+            <p class="small">
+              Daily income:
+              <span class="green">${fmt(p.income)}</span>
+            </p>
+
+            <button
+              class="btn ${own?"":"greenBtn"}"
+              onclick="buyProperty('${p.id}')"
+              ${own?"disabled":""}>
+              ${own?"OWNED":"PURCHASE"}
+            </button>
+          </div>
+        `;
+      }).join("")}
+
+    </div>
+  `;
+}
+
+function renderShop(el){
+  const foods=[
+    ["Street Snack",8,20],
+    ["Burger Meal",18,40],
+    ["Restaurant Dinner",55,70],
+    ["Luxury Dinner",250,100]
+  ];
+
+  el.innerHTML=`
+    <h1>City Shop</h1>
+    <div class="subtitle">Take care of yourself. You can't build an empire while starving.</div>
+
+    <div class="grid">
+
+      ${foods.map(f=>`
+        <div class="card">
+          <div class="tag">HUNGER +${f[2]}</div>
+          <h3>${f[0]}</h3>
+          <div class="price">${fmt(f[1])}</div>
+
+          <button class="btn greenBtn"
+            onclick="eat(${f[1]},${f[2]},'${f[0]}')">
+            BUY & EAT
+          </button>
+        </div>
+      `).join("")}
+
+      <div class="card">
+        <div class="tag">EDUCATION</div>
+        <h3>Skill Course</h3>
+        <div class="price">$100</div>
+        <p class="small">+3 Skill • -10 Energy</p>
+        <button class="btn" onclick="train()">START COURSE</button>
+      </div>
+
+    </div>
+  `;
+}
+
+function renderProfile(el){
+  el.innerHTML=`
+    <h1>Your Life</h1>
+    <div class="subtitle">There is only one scoreboard that matters.</div>
+
+    <div class="grid">
+
+      <div class="card">
+        <div class="small">NET WORTH</div>
+        <div class="big green">${fmt(netWorth())}</div>
+      </div>
+
+      <div class="card">
+        <div class="small">TOTAL EARNED</div>
+        <div class="big">${fmt(state.totalEarned)}</div>
+      </div>
+
+      <div class="card">
+        <div class="small">BUSINESSES</div>
+        <div class="big">${state.ownedBusinesses.length}</div>
+      </div>
+
+      <div class="card">
+        <div class="small">PROPERTIES</div>
+        <div class="big">${state.ownedProperties.length}</div>
+      </div>
+
+      <div class="card">
+        <div class="small">VEHICLES</div>
+        <div class="big">${state.ownedCars.length}</div>
+      </div>
+
+      <div class="card">
+        <div class="small">EMPLOYEES</div>
+        <div class="big">${state.employees}</div>
+      </div>
+
+    </div>
+
+    <h3 style="margin-top:25px">Achievements</h3>
+
+    <div class="card">
+      ${[
+        ["first1000","First $1K"],
+        ["car","First Vehicle"],
+        ["boss","Business Owner"],
+        ["million","Millionaire"],
+        ["tenmillion","Eight Figures"],
+        ["billion","Billionaire"]
+      ].map(a=>`
+        <div style="
+          padding:12px 0;
+          border-bottom:1px solid #ffffff0b;
+          opacity:${state.achievements.includes(a[0])?1:.25}">
+          ${state.achievements.includes(a[0])?"✓":"○"} ${a[1]}
+        </div>
+      `).join("")}
+    </div>
+
+    <button class="btn redBtn" onclick="resetGame()" style="margin-top:20px">
+      RESET LIFE
+    </button>
+  `;
+}
+
+function renderGoals(){
+  const goals=[
+    [state.totalEarned>=1000,"Earn your first $1,000"],
+    [state.ownedCars.length>0,"Buy a vehicle"],
+    [state.ownedBusinesses.length>0,"Start a business"],
+    [netWorth()>=1000000,"Reach $1M net worth"],
+    [netWorth()>=1000000000,"Become a billionaire"]
+  ];
+
+  document.getElementById("goals").innerHTML=
+    goals.map(g=>`
+      <div class="goal" style="opacity:${g[0]?.45:1}">
+        ${g[0]?"✓":"○"} ${g[1]}
+      </div>
+    `).join("");
+}
+
+function renderLogs(){
+  document.getElementById("logs").innerHTML=
+    state.logs.length
+    ?state.logs.map(l=>`
+      <div class="log">
+        <div class="logTime">DAY ${l.day} • ${String(l.hour).padStart(2,"0")}:00</div>
+        ${l.text}
+      </div>
+    `).join("")
+    :`<div class="small">Your story starts now.</div>`;
+}
+
+function update(){
+  state.energy=clamp(state.energy);
+  state.hunger=clamp(state.hunger);
+  state.happiness=clamp(state.happiness);
+  state.health=clamp(state.health);
+  state.reputation=clamp(state.reputation);
+
+  document.getElementById("money").textContent=fmt(state.money);
+
+  document.getElementById("clock").textContent=
+    "DAY "+state.day+" • "+String(state.hour).padStart(2,"0")+":00";
+
+  const statMap=[
+    ["energy",state.energy],
+    ["hunger",state.hunger],
+    ["happy",state.happiness],
+    ["health",state.health],
+    ["rep",state.reputation]
+  ];
+
+  statMap.forEach(x=>{
+    document.getElementById(x[0]+"N").textContent=Math.round(x[1]);
+    document.getElementById(x[0]+"B").style.width=x[1]+"%";
+  });
+
+  checkAchievements();
+  render();
+  save();
+}
+
+function showModal(type,title,text,actions){
+  document.getElementById("modalType").textContent=type;
+  document.getElementById("modalTitle").textContent=title;
+  document.getElementById("modalText").textContent=text;
+
+  const box=document.getElementById("modalActions");
+  box.innerHTML="";
+
+  actions.forEach(a=>{
+    const b=document.createElement("button");
+    b.className="btn";
+    b.textContent=a[0];
+    b.onclick=a[1];
+    box.appendChild(b);
+  });
+
+  document.getElementById("modal").classList.remove("hidden");
+}
+
+function closeModal(){
+  document.getElementById("modal").classList.add("hidden");
+}
+
+function message(title,text){
+  showModal("ONE LIFE",title,text,[
+    ["OK",closeModal]
+  ]);
+}
+
+function resetGame(){
+  showModal(
+    "WARNING",
+    "Reset your life?",
+    "This permanently deletes this save and starts again from $0.",
+    [
+      ["Cancel",closeModal],
+      ["RESET",()=>{
+        localStorage.removeItem("oneLifeSave");
+        location.reload();
+      }]
+    ]
+  );
+}
+
 load();
+
+if(!state.logs.length){
+  addLog("You arrived in the city with $0.");
+}
+
+update();
 </script>
 
 </body>
